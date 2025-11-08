@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('MorphingEmoji builds and transitions between emotions',
       (tester) async {
-    final widget = MaterialApp(
+    const widget = MaterialApp(
       home: Scaffold(
         body: MorphingEmoji(
             emotion: Emotion.neutral, size: 100, showFaceCircle: false),
@@ -17,7 +17,7 @@ void main() {
 
     // Update with different emotion and animate
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
         body: MorphingEmoji(
             emotion: Emotion.happy, size: 100, showFaceCircle: false),

@@ -20,8 +20,8 @@ class EmotionProvider extends ChangeNotifier {
         _analysis = analysisService {
     // Start analysis stream when available
     if (_analysis != null) {
-      _analysis!.start();
-      _subscription = _analysis!.stream.listen(_onEvent);
+      _analysis.start();
+      _subscription = _analysis.stream.listen(_onEvent);
     }
   }
 

@@ -26,8 +26,8 @@ void main() {
       audioService: _NoopAudio(),
     );
     provider.updateSettings(smoothing: 0.5, windowSize: 5);
-    Rect r1 = const Rect.fromLTWH(0.1, 0.1, 0.4, 0.4);
-    Rect r2 = const Rect.fromLTWH(0.5, 0.5, 0.4, 0.4);
+    const r1 = Rect.fromLTWH(0.1, 0.1, 0.4, 0.4);
+    const r2 = Rect.fromLTWH(0.5, 0.5, 0.4, 0.4);
     provider.debugInjectEvent(DetectionEvent(
       emotion: EmotionResult(emotion: Emotion.neutral, confidence: 0.9),
       bounds: FaceBounds(rect: r1, timestamp: DateTime.now()),
