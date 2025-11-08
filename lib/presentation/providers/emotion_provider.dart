@@ -9,15 +9,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vibrate/flutter_vibrate.dart';
 
 class EmotionProvider extends ChangeNotifier {
-  EmotionProvider() {
+  EmotionProvider({Debouncer? debouncer, IAudioService? audioService})
+      : _debouncer =
+            debouncer ?? Debouncer(duration: const Duration(milliseconds: 250)),
+        _audio = audioService ?? AudioService() {
     _service.start();
     _subscription = _service.stream.listen(_onResult);
   }
 
   final EmotionDetectionService _service = EmotionDetectionService();
-  final AudioService _audio = AudioService();
-  final Debouncer _debouncer =
-      Debouncer(duration: const Duration(milliseconds: 250));
+  final IAudioService _audio;
+  final Debouncer _debouncer;
   StreamSubscription<EmotionResult>? _subscription;
 
   Emotion _current = Emotion.neutral;
@@ -54,6 +56,7 @@ class EmotionProvider extends ChangeNotifier {
   }
 
   Future<void> _triggerFeedback() async {
+    // Skip platform channel calls in pure Dart test environment by checking binding.
     if (soundOn) await _audio.playForEmotion(_current);
     if (hapticOn && await Vibrate.canVibrate) {
       Vibrate.feedback(FeedbackType.light);

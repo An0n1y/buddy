@@ -1,7 +1,12 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:emotion_sense/core/constants/emotions.dart';
 
-class AudioService {
+abstract class IAudioService {
+  Future<void> playForEmotion(Emotion e);
+  Future<void> dispose();
+}
+
+class AudioService implements IAudioService {
   final _player = AudioPlayer();
 
   String? _assetForEmotion(Emotion e) {
@@ -21,6 +26,7 @@ class AudioService {
     }
   }
 
+  @override
   Future<void> playForEmotion(Emotion e) async {
     final asset = _assetForEmotion(e);
     if (asset == null) return;
@@ -31,6 +37,7 @@ class AudioService {
     }
   }
 
+  @override
   Future<void> dispose() async {
     await _player.dispose();
   }

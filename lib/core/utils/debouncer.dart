@@ -8,6 +8,10 @@ class Debouncer {
 
   void call(void Function() action) {
     _timer?.cancel();
+    if (duration == Duration.zero) {
+      action();
+      return;
+    }
     _timer = Timer(duration, action);
   }
 
