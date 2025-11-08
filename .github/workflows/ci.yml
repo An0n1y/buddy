@@ -1,0 +1,83 @@
+name: Flutter CI
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: subosito/flutter-action@v2
+              with:
+                  channel: "stable"
+            - name: Flutter version
+              run: flutter --version
+            - name: Install dependencies
+              run: flutter pub get
+            - name: Analyze
+              run: flutter analyze
+            - name: Test
+              run: flutter test
+
+    build-android:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: subosito/flutter-action@v2
+              with:
+                  channel: "stable"
+            - name: Ensure platforms
+              run: |
+                  if [ ! -d android ]; then
+                    flutter create . --platforms=android
+                  fi
+            - name: Install dependencies
+              run: flutter pub get
+            - name: Build APK (release)
+              run: flutter build apk --release
+            - name: Upload APK artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: app-release.apk
+                  path: build/app/outputs/flutter-apk/app-release.apk
+
+    build-ios-unsigned:
+        needs: test
+        runs-on: macos-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: subosito/flutter-action@v2
+              with:
+                  channel: "stable"
+            - name: Ensure platforms
+              shell: bash
+              run: |
+                  if [ ! -d ios ]; then
+                    flutter create . --platforms=ios
+                  fi
+            - name: Install dependencies
+              run: flutter pub get
+            - name: Build iOS app without code signing
+              run: flutter build ios --release --no-codesign
+            - name: Package unsigned IPA
+              shell: bash
+              run: |
+                  APP_PATH="build/ios/iphoneos/Runner.app"
+                  if [ ! -d "$APP_PATH" ]; then
+                    echo "Runner.app not found at $APP_PATH";
+                    exit 1;
+                  fi
+                  mkdir -p build/ios/Payload
+                  cp -R "$APP_PATH" build/ios/Payload/
+                  cd build/ios
+                  zip -r Runner-unsigned.ipa Payload
+                  rm -rf Payload
+            - name: Upload unsigned IPA artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Runner-unsigned.ipa
+                  path: build/ios/Runner-unsigned.ipa

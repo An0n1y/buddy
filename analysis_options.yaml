@@ -1,0 +1,8 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    - always_use_package_imports
+    - avoid_types_on_closure_parameters
+    - cancel_subscriptions
+    - prefer_final_locals
