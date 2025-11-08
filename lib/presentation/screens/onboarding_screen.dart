@@ -14,14 +14,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _continue() async {
     setState(() => _requesting = true);
-    final granted = await PermissionManager().ensureCamera();
+    final manager = PermissionManager();
+    final granted = await manager.ensureCamera();
     setState(() => _requesting = false);
     if (!mounted) return;
     if (granted) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
+      // If permission is denied, guide the user to Settings to enable it.
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Camera permission is required.')));
+        const SnackBar(
+          content: Text(
+              'Camera permission is required. Opening Settings so you can enable it.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -54,6 +61,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: _requesting
                       ? const CircularProgressIndicator()
                       : const Text('Continue'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _requesting
+                      ? null
+                      : () async {
+                          final manager = PermissionManager();
+                          await manager.openSettings();
+                        },
+                  child: const Text('Open Settings'),
                 ),
               ),
               const SizedBox(height: 12),

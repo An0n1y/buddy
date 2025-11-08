@@ -5,7 +5,24 @@ class PermissionManager {
   Future<bool> ensureCamera() async {
     final status = await Permission.camera.status;
     if (status.isGranted) return true;
-    final result = await Permission.camera.request();
-    return result.isGranted;
+
+    // If the status is undetermined, this should trigger the iOS system dialog once.
+    if (status.isDenied) {
+      final result = await Permission.camera.request();
+      if (result.isGranted) return true;
+    }
+
+    // On iOS, once denied, the system dialog will not show again.
+    // Direct the user to Settings so they can enable the permission manually.
+    if (status.isDenied || status.isPermanentlyDenied || status.isRestricted) {
+      await openSettings();
+      return false;
+    }
+
+    return false;
+  }
+
+  Future<void> openSettings() async {
+    await openAppSettings();
   }
 }
