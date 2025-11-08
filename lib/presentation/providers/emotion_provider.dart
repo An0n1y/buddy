@@ -118,6 +118,7 @@ class EmotionProvider extends ChangeNotifier {
     double? smoothing,
     int? windowSize,
     int? missingFramesToNeutral,
+    int? frameRate,
   }) {
     if (threshold != null) confidenceThreshold = threshold;
     if (sound != null) soundOn = sound;
@@ -126,6 +127,11 @@ class EmotionProvider extends ChangeNotifier {
     if (windowSize != null && windowSize > 0) confidenceWindowSize = windowSize;
     if (missingFramesToNeutral != null && missingFramesToNeutral > 0) {
       maxMissingBeforeNeutral = missingFramesToNeutral;
+    }
+    if (frameRate != null && frameRate > 0) {
+      if (_analysis != null) {
+        _analysis.targetFps = frameRate;
+      }
     }
   }
 

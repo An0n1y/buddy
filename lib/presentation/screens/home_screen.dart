@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Emotion? _lastCapturedEmotion;
   DateTime _lastAutoCapture = DateTime.fromMillisecondsSinceEpoch(0);
-  final Duration _autoCaptureCooldown = const Duration(seconds: 8);
+  Duration _autoCaptureCooldown = const Duration(seconds: 8);
   double autoCaptureMinConfidence = 0.75;
 
   @override
@@ -46,6 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final emotionProvider = context.read<EmotionProvider>();
     final camera = context.read<CameraProvider>();
     final history = context.read<HistoryProvider>();
+    final settings = context.read<SettingsProvider>();
+    if (!settings.autoCapture) return;
+    // Refresh thresholds from settings
+    autoCaptureMinConfidence = settings.autoCaptureConfidence;
+    _autoCaptureCooldown = Duration(seconds: settings.autoCaptureCooldownSec);
     final now = DateTime.now();
     final changed = emotionProvider.current != _lastCapturedEmotion;
     final highConfidence =
@@ -77,6 +82,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final emotion = context.watch<EmotionProvider>();
     final camera = context.watch<CameraProvider>();
     final settings = context.watch<SettingsProvider>();
+    // Keep provider thresholds in sync with settings
+    emotion.updateSettings(
+      threshold: settings.sensitivity,
+      sound: settings.soundOn,
+      haptic: settings.hapticOn,
+      smoothing: settings.smoothingAlpha,
+      windowSize: settings.confidenceWindow,
+      missingFramesToNeutral: settings.missingFramesNeutral,
+      frameRate: settings.frameRate,
+    );
 
     return Scaffold(
       appBar: AppBar(
