@@ -6,7 +6,7 @@ import 'package:emotion_sense/data/models/emotion_result.dart';
 import 'package:emotion_sense/data/services/emotion_detection_service.dart';
 import 'package:emotion_sense/data/services/audio_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
+import 'package:flutter/services.dart';
 
 class EmotionProvider extends ChangeNotifier {
   EmotionProvider({Debouncer? debouncer, IAudioService? audioService})
@@ -56,10 +56,10 @@ class EmotionProvider extends ChangeNotifier {
   }
 
   Future<void> _triggerFeedback() async {
-    // Skip platform channel calls in pure Dart test environment by checking binding.
     if (soundOn) await _audio.playForEmotion(_current);
-    if (hapticOn && await Vibrate.canVibrate) {
-      Vibrate.feedback(FeedbackType.light);
+    if (hapticOn) {
+      // Uses Flutter's built-in haptics, avoiding external plugins.
+      await HapticFeedback.lightImpact();
     }
   }
 
