@@ -23,7 +23,7 @@ class MorphingEmoji extends StatefulWidget {
 }
 
 class _MorphingEmojiState extends State<MorphingEmoji>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   late AnimationController _blinkController;

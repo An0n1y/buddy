@@ -9,8 +9,12 @@ class CameraService {
   final ValueNotifier<bool> isFrontCamera = ValueNotifier<bool>(true);
   final ValueNotifier<FlashMode> flashMode =
       ValueNotifier<FlashMode>(FlashMode.off);
+  final StreamController<CameraImage> _imageStreamController =
+      StreamController<CameraImage>.broadcast();
+  bool _streaming = false;
 
   CameraController? get controller => _controller;
+  Stream<CameraImage> get imageStream => _imageStreamController.stream;
 
   Future<void> initialize() async {
     final cameras = await availableCameras();
@@ -59,7 +63,27 @@ class CameraService {
     return _controller!.takePicture();
   }
 
+  Future<void> startImageStream() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    if (_streaming) return;
+    _streaming = true;
+    await _controller!.startImageStream((image) {
+      if (!_imageStreamController.isClosed) {
+        _imageStreamController.add(image);
+      }
+    });
+  }
+
+  Future<void> stopImageStream() async {
+    if (_controller == null) return;
+    if (!_streaming) return;
+    await _controller!.stopImageStream();
+    _streaming = false;
+  }
+
   Future<void> dispose() async {
+    await stopImageStream();
+    await _imageStreamController.close();
     await _controller?.dispose();
     isInitialized.dispose();
     isFrontCamera.dispose();

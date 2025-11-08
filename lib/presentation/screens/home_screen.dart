@@ -6,7 +6,8 @@ import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
 import 'package:emotion_sense/presentation/providers/history_provider.dart';
 import 'package:emotion_sense/data/models/age_gender_data.dart';
 import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
-import 'package:emotion_sense/presentation/widgets/emotion_display_card.dart';
+import 'package:emotion_sense/presentation/widgets/morphing_emoji.dart';
+import 'package:emotion_sense/presentation/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,18 +19,64 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Emotion? _lastCapturedEmotion;
+  DateTime _lastAutoCapture = DateTime.fromMillisecondsSinceEpoch(0);
+  final Duration _autoCaptureCooldown = const Duration(seconds: 8);
+  double autoCaptureMinConfidence = 0.75;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CameraProvider>().initialize();
+      // Listen for emotion changes to trigger auto-capture.
+      final emotionProvider = context.read<EmotionProvider>();
+      emotionProvider.addListener(_maybeAutoCapture);
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<EmotionProvider>().removeListener(_maybeAutoCapture);
+    super.dispose();
+  }
+
+  void _maybeAutoCapture() async {
+    if (!mounted) return;
+    final emotionProvider = context.read<EmotionProvider>();
+    final camera = context.read<CameraProvider>();
+    final history = context.read<HistoryProvider>();
+    final now = DateTime.now();
+    final changed = emotionProvider.current != _lastCapturedEmotion;
+    final highConfidence =
+        emotionProvider.confidence >= autoCaptureMinConfidence;
+    final cooldownPassed =
+        now.difference(_lastAutoCapture) >= _autoCaptureCooldown;
+    if (changed && highConfidence && cooldownPassed) {
+      final file = await camera.controller?.takePicture();
+      if (file != null) {
+        await history.addCapture(
+          imagePath: file.path,
+          emotion: emotionProvider.current,
+          confidence: emotionProvider.confidence,
+          ageGender: emotionProvider.ageGender,
+        );
+        _lastCapturedEmotion = emotionProvider.current;
+        _lastAutoCapture = now;
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Auto-captured ${emotionProvider.current.emoji}')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final emotion = context.watch<EmotionProvider>();
     final camera = context.watch<CameraProvider>();
+    final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -108,13 +155,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Positioned.fill(
                       child: CameraPreviewWidget(controller: camera.controller),
                     ),
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: EmotionDisplayCard(
-                        emotion: emotion.current,
-                        confidence: emotion.confidence,
+                    // Centered emoji overlay without background
+                    // Face-tracked emoji (fallback to center if no bounds)
+                    _FaceTrackedEmoji(emotion: emotion),
+                    // Bottom-right age/gender overlay chip (if enabled)
+                    if (settings.showAgeGender)
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: _AgeGenderChip(),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -124,6 +174,36 @@ class _HomeScreenState extends State<HomeScreen> {
               _ManualOverride(emotion: emotion),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgeGenderChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ageGender =
+        context.select<EmotionProvider, AgeGenderData?>((p) => p.ageGender);
+    final text =
+        ageGender == null ? '—' : '${ageGender.ageRange} • ${ageGender.gender}';
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
         ),
       ),
     );
@@ -208,6 +288,45 @@ class _ManualOverride extends StatelessWidget {
           child: Text(e.emoji),
         );
       }).toList(),
+    );
+  }
+}
+
+class _FaceTrackedEmoji extends StatelessWidget {
+  const _FaceTrackedEmoji({required this.emotion});
+  final EmotionProvider emotion;
+
+  @override
+  Widget build(BuildContext context) {
+    final bounds = emotion.smoothedFaceBounds?.rect ?? emotion.faceBounds?.rect;
+    final size = MediaQuery.of(context).size;
+    const baseSize = 120.0;
+    if (bounds == null) {
+      return Align(
+        alignment: Alignment.center,
+        child: MorphingEmoji(
+          emotion: emotion.current,
+          size: baseSize,
+          showFaceCircle: false,
+        ),
+      );
+    }
+    // Scale emoji relative to face width (normalized) with clamp.
+    final scaled = (bounds.width * size.width * 0.9).clamp(80.0, 180.0);
+    final left =
+        bounds.left * size.width + (bounds.width * size.width - scaled) / 2;
+    final top =
+        bounds.top * size.height + (bounds.height * size.height - scaled) / 2;
+    return Positioned(
+      left: left,
+      top: top,
+      width: scaled,
+      height: scaled,
+      child: MorphingEmoji(
+        emotion: emotion.current,
+        size: scaled,
+        showFaceCircle: false,
+      ),
     );
   }
 }

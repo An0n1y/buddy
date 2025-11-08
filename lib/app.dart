@@ -6,6 +6,7 @@ import 'package:emotion_sense/presentation/screens/settings_screen.dart';
 import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
+import 'package:emotion_sense/data/services/face_analysis_service.dart';
 import 'package:emotion_sense/presentation/providers/history_provider.dart';
 import 'package:emotion_sense/data/repositories/history_repository.dart';
 import 'package:emotion_sense/presentation/providers/settings_provider.dart';
@@ -20,7 +21,15 @@ class EmotionApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => CameraProvider()),
-        ChangeNotifierProvider(create: (_) => EmotionProvider()),
+        ChangeNotifierProxyProvider<CameraProvider, EmotionProvider>(
+          create: (_) => EmotionProvider(),
+          update: (_, cam, prev) {
+            // Recreate only if previous null
+            return prev ??
+                EmotionProvider(
+                    analysisService: FaceAnalysisService(cam.service));
+          },
+        ),
         ChangeNotifierProvider(
             create: (_) => HistoryProvider(HistoryRepository())),
       ],

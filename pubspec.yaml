@@ -15,6 +15,7 @@ dependencies:
   # Camera & utilities (no AI/ML packages per requirement)
   camera: ^0.10.0
   image: ^4.0.0
+  # ML dependencies will be added later (google_mlkit_face_detection, tflite_flutter) once models supplied.
 
   # State Management
   provider: ^6.0.0
@@ -48,3 +49,7 @@ flutter:
     - assets/sounds/
     - assets/icons/
     - assets/models/  # Reserved (not used in no-ML mode)
+    # Place model files here (not committed):
+  # Provide models later:
+  # - assets/models/emotion.tflite
+  # - assets/models/age_gender.tflite

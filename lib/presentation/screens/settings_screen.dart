@@ -68,6 +68,67 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const Divider(),
+          SwitchListTile(
+            title: const Text('Auto capture on emotion change'),
+            value: s.autoCapture,
+            onChanged: (v) => s.setAutoCapture(v),
+          ),
+          ListTile(
+            title: const Text('Auto capture confidence'),
+            subtitle: Slider(
+              value: s.autoCaptureConfidence,
+              min: 0.5,
+              max: 0.95,
+              divisions: 9,
+              label: s.autoCaptureConfidence.toStringAsFixed(2),
+              onChanged: (v) => s.setAutoCaptureConfidence(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Auto capture cooldown (sec)'),
+            subtitle: Slider(
+              value: s.autoCaptureCooldownSec.toDouble(),
+              min: 3,
+              max: 20,
+              divisions: 17,
+              label: '${s.autoCaptureCooldownSec}s',
+              onChanged: (v) => s.setAutoCaptureCooldownSec(v.round()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Smoothing alpha'),
+            subtitle: Slider(
+              value: s.smoothingAlpha,
+              min: 0.1,
+              max: 0.8,
+              divisions: 14,
+              label: s.smoothingAlpha.toStringAsFixed(2),
+              onChanged: (v) => s.setSmoothingAlpha(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Confidence window size'),
+            subtitle: Slider(
+              value: s.confidenceWindow.toDouble(),
+              min: 4,
+              max: 24,
+              divisions: 20,
+              label: s.confidenceWindow.toString(),
+              onChanged: (v) => s.setConfidenceWindow(v.round()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Frames missing before neutral'),
+            subtitle: Slider(
+              value: s.missingFramesNeutral.toDouble(),
+              min: 10,
+              max: 120,
+              divisions: 11,
+              label: s.missingFramesNeutral.toString(),
+              onChanged: (v) => s.setMissingFramesNeutral(v.round()),
+            ),
+          ),
+          const Divider(),
           const ListTile(
             title: Text('About'),
             subtitle: Text(

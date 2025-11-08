@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 class CameraProvider extends ChangeNotifier {
   final CameraService _service = CameraService();
+  CameraService get service => _service;
 
   CameraController? get controller => _service.controller;
   bool get isInitialized => _service.isInitialized.value;

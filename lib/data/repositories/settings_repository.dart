@@ -9,6 +9,12 @@ class SettingsRepository {
   static const _kThemeMode = 'theme_mode'; // system, light, dark
   static const _kSensitivity = 'detection_sensitivity';
   static const _kFrameRate = 'frame_rate';
+  static const _kAutoCapture = 'auto_capture_enabled';
+  static const _kSmoothAlpha = 'smoothing_alpha';
+  static const _kConfWindow = 'confidence_window';
+  static const _kMissingNeutral = 'missing_frames_neutral';
+  static const _kAutoConf = 'auto_capture_confidence';
+  static const _kAutoCooldown = 'auto_capture_cooldown_sec';
 
   Future<bool> getShowAgeGender() async =>
       (await SharedPreferences.getInstance()).getBool(_kShowAgeGender) ?? true;
@@ -57,4 +63,35 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).getInt(_kFrameRate) ?? 15;
   Future<void> setFrameRate(int v) async =>
       (await SharedPreferences.getInstance()).setInt(_kFrameRate, v);
+
+  // New advanced settings
+  Future<bool> getAutoCapture() async =>
+      (await SharedPreferences.getInstance()).getBool(_kAutoCapture) ?? true;
+  Future<void> setAutoCapture(bool v) async =>
+      (await SharedPreferences.getInstance()).setBool(_kAutoCapture, v);
+
+  Future<double> getSmoothingAlpha() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kSmoothAlpha) ?? 0.4;
+  Future<void> setSmoothingAlpha(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kSmoothAlpha, v);
+
+  Future<int> getConfidenceWindow() async =>
+      (await SharedPreferences.getInstance()).getInt(_kConfWindow) ?? 12;
+  Future<void> setConfidenceWindow(int v) async =>
+      (await SharedPreferences.getInstance()).setInt(_kConfWindow, v);
+
+  Future<int> getMissingFramesNeutral() async =>
+      (await SharedPreferences.getInstance()).getInt(_kMissingNeutral) ?? 45;
+  Future<void> setMissingFramesNeutral(int v) async =>
+      (await SharedPreferences.getInstance()).setInt(_kMissingNeutral, v);
+
+  Future<double> getAutoCaptureConfidence() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kAutoConf) ?? 0.75;
+  Future<void> setAutoCaptureConfidence(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kAutoConf, v);
+
+  Future<int> getAutoCaptureCooldownSec() async =>
+      (await SharedPreferences.getInstance()).getInt(_kAutoCooldown) ?? 8;
+  Future<void> setAutoCaptureCooldownSec(int v) async =>
+      (await SharedPreferences.getInstance()).setInt(_kAutoCooldown, v);
 }
