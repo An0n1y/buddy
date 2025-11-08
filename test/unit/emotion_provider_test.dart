@@ -3,7 +3,9 @@ import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('EmotionProvider manual override updates current emotion with confidence', () async {
+  test(
+      'EmotionProvider manual override updates current emotion with confidence',
+      () async {
     final provider = EmotionProvider();
     addTearDown(provider.dispose);
 
