@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- iOS privacy usage descriptions so the app appears in Settings > Privacy and can request permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to display the live preview and manually tag emotions. No images leave your device.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is optional and would only be used for future audio-based cues. Audio is never uploaded.</string>
 </dict>
 </plist>
