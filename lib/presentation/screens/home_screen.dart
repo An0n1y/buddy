@@ -158,29 +158,33 @@ class _Controls extends StatelessWidget {
         ),
         IconButton(
           onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
             final file = await camera.controller?.takePicture();
             if (!context.mounted) return;
-            if (file != null) {
-              // Add to history with current emotion info and stub age/gender.
-              final emotionProvider = context.read<EmotionProvider>();
-              final history = context.read<HistoryProvider>();
-              // Placeholder age/gender data (future: real estimation)
-              final stubAgeGender = AgeGenderData(
-                  ageRange: '25-30', gender: 'Unknown', confidence: 0.0);
-              await history.addCapture(
-                imagePath: file.path,
-                emotion: emotionProvider.current,
-                confidence: emotionProvider.confidence,
-                ageGender: stubAgeGender,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Saved: ${file.path}')),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
+            if (file == null) {
+              messenger.showSnackBar(
                 const SnackBar(content: Text('Capture failed')),
               );
+              return;
             }
+            // Access providers after ensuring mounted (context safe).
+            final emotionProvider = context.read<EmotionProvider>();
+            final history = context.read<HistoryProvider>();
+            final stubAgeGender = AgeGenderData(
+              ageRange: '25-30',
+              gender: 'Unknown',
+              confidence: 0.0,
+            );
+            await history.addCapture(
+              imagePath: file.path,
+              emotion: emotionProvider.current,
+              confidence: emotionProvider.confidence,
+              ageGender: stubAgeGender,
+            );
+            if (!context.mounted) return;
+            messenger.showSnackBar(
+              SnackBar(content: Text('Saved: ${file.path}')),
+            );
           },
           icon: const Icon(Icons.camera),
         ),
