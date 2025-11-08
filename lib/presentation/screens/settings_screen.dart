@@ -67,6 +67,17 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (v) => s.setFrameRate(v.round()),
             ),
           ),
+          ListTile(
+            title: const Text('Analysis target FPS'),
+            subtitle: Slider(
+              value: s.targetFps.toDouble(),
+              min: 10,
+              max: 30,
+              divisions: 4,
+              label: '${s.targetFps} fps',
+              onChanged: (v) => s.setTargetFps(v.round()),
+            ),
+          ),
           const Divider(),
           SwitchListTile(
             title: const Text('Auto capture on emotion change'),
@@ -104,6 +115,39 @@ class SettingsScreen extends StatelessWidget {
               divisions: 14,
               label: s.smoothingAlpha.toStringAsFixed(2),
               onChanged: (v) => s.setSmoothingAlpha(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Mouth open threshold'),
+            subtitle: Slider(
+              value: s.mouthOpenThreshold,
+              min: 0.05,
+              max: 0.5,
+              divisions: 45,
+              label: s.mouthOpenThreshold.toStringAsFixed(2),
+              onChanged: (v) => s.setMouthOpenThreshold(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Brow compression threshold'),
+            subtitle: Slider(
+              value: s.browCompressionThreshold,
+              min: 0.02,
+              max: 0.3,
+              divisions: 28,
+              label: s.browCompressionThreshold.toStringAsFixed(2),
+              onChanged: (v) => s.setBrowCompressionThreshold(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Energy (motion) threshold'),
+            subtitle: Slider(
+              value: s.energyThreshold,
+              min: 0.6,
+              max: 2.0,
+              divisions: 14,
+              label: s.energyThreshold.toStringAsFixed(2),
+              onChanged: (v) => s.setEnergyThreshold(v),
             ),
           ),
           ListTile(

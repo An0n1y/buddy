@@ -12,10 +12,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Camera & utilities (no AI/ML packages per requirement)
+  # Camera & utilities
   camera: ^0.10.0
   image: ^4.0.0
-  # ML dependencies will be added later (google_mlkit_face_detection, tflite_flutter) once models supplied.
+  # On-device free face detection (Google ML Kit)
+  google_mlkit_face_detection: ^0.11.0
 
   # State Management
   provider: ^6.0.0

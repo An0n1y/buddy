@@ -91,6 +91,10 @@ class _HomeScreenState extends State<HomeScreen> {
       windowSize: settings.confidenceWindow,
       missingFramesToNeutral: settings.missingFramesNeutral,
       frameRate: settings.frameRate,
+      targetFps: settings.targetFps,
+      mouthOpenThreshold: settings.mouthOpenThreshold,
+      browCompressionThreshold: settings.browCompressionThreshold,
+      energyThreshold: settings.energyThreshold,
     );
 
     return Scaffold(
@@ -169,6 +173,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Positioned.fill(
                       child: CameraPreviewWidget(controller: camera.controller),
+                    ),
+                    // Top-center gold face (small) persistent indicator
+                    const Positioned(
+                      top: 8,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: _TopCenterEmoji(),
+                      ),
                     ),
                     // Centered emoji overlay without background
                     // Face-tracked emoji (fallback to center if no bounds)
@@ -342,6 +355,19 @@ class _FaceTrackedEmoji extends StatelessWidget {
         size: scaled,
         showFaceCircle: false,
       ),
+    );
+  }
+}
+
+class _TopCenterEmoji extends StatelessWidget {
+  const _TopCenterEmoji();
+  @override
+  Widget build(BuildContext context) {
+    final emotion = context.watch<EmotionProvider>();
+    return MorphingEmoji(
+      emotion: emotion.current,
+      size: 64,
+      showFaceCircle: true,
     );
   }
 }

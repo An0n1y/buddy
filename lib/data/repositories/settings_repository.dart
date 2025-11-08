@@ -15,6 +15,10 @@ class SettingsRepository {
   static const _kMissingNeutral = 'missing_frames_neutral';
   static const _kAutoConf = 'auto_capture_confidence';
   static const _kAutoCooldown = 'auto_capture_cooldown_sec';
+  static const _kMouthOpenTh = 'mouth_open_threshold';
+  static const _kBrowCompTh = 'brow_compression_threshold';
+  static const _kEnergyTh = 'energy_threshold';
+  static const _kTargetFps = 'target_fps';
 
   Future<bool> getShowAgeGender() async =>
       (await SharedPreferences.getInstance()).getBool(_kShowAgeGender) ?? true;
@@ -94,4 +98,26 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).getInt(_kAutoCooldown) ?? 8;
   Future<void> setAutoCaptureCooldownSec(int v) async =>
       (await SharedPreferences.getInstance()).setInt(_kAutoCooldown, v);
+
+  // Thresholds
+  Future<double> getMouthOpenThreshold() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kMouthOpenTh) ?? 0.22;
+  Future<void> setMouthOpenThreshold(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kMouthOpenTh, v);
+
+  Future<double> getBrowCompressionThreshold() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kBrowCompTh) ?? 0.12;
+  Future<void> setBrowCompressionThreshold(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kBrowCompTh, v);
+
+  Future<double> getEnergyThreshold() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kEnergyTh) ?? 1.2;
+  Future<void> setEnergyThreshold(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kEnergyTh, v);
+
+  // Target FPS (analysis)
+  Future<int> getTargetFps() async =>
+      (await SharedPreferences.getInstance()).getInt(_kTargetFps) ?? 15;
+  Future<void> setTargetFps(int v) async =>
+      (await SharedPreferences.getInstance()).setInt(_kTargetFps, v);
 }

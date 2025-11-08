@@ -119,6 +119,10 @@ class EmotionProvider extends ChangeNotifier {
     int? windowSize,
     int? missingFramesToNeutral,
     int? frameRate,
+    int? targetFps,
+    double? mouthOpenThreshold,
+    double? browCompressionThreshold,
+    double? energyThreshold,
   }) {
     if (threshold != null) confidenceThreshold = threshold;
     if (sound != null) soundOn = sound;
@@ -131,6 +135,20 @@ class EmotionProvider extends ChangeNotifier {
     if (frameRate != null && frameRate > 0) {
       if (_analysis != null) {
         _analysis.targetFps = frameRate;
+      }
+    }
+    if (targetFps != null && targetFps > 0 && _analysis != null) {
+      _analysis.targetFps = targetFps;
+    }
+    if (_analysis != null) {
+      if (mouthOpenThreshold != null) {
+        _analysis.mouthOpenThreshold = mouthOpenThreshold;
+      }
+      if (browCompressionThreshold != null) {
+        _analysis.browCompressionThreshold = browCompressionThreshold;
+      }
+      if (energyThreshold != null) {
+        _analysis.energyThreshold = energyThreshold;
       }
     }
   }

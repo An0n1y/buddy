@@ -11,12 +11,17 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   double _sensitivity = 0.6; // 0..1
   int _frameRate = 15; // fps
+  int _targetFps = 15; // analysis target FPS
   bool _autoCapture = true;
   double _smoothingAlpha = 0.4;
   int _confidenceWindow = 12;
   int _missingFramesNeutral = 45;
   double _autoCaptureConfidence = 0.75;
   int _autoCaptureCooldownSec = 8;
+  // New thresholds for heuristic / model tuning
+  double _mouthOpenThreshold = 0.22;
+  double _browCompressionThreshold = 0.12;
+  double _energyThreshold = 1.2;
 
   bool get showAgeGender => _showAgeGender;
   bool get useLottie => _useLottie;
@@ -25,12 +30,16 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   double get sensitivity => _sensitivity;
   int get frameRate => _frameRate;
+  int get targetFps => _targetFps;
   bool get autoCapture => _autoCapture;
   double get smoothingAlpha => _smoothingAlpha;
   int get confidenceWindow => _confidenceWindow;
   int get missingFramesNeutral => _missingFramesNeutral;
   double get autoCaptureConfidence => _autoCaptureConfidence;
   int get autoCaptureCooldownSec => _autoCaptureCooldownSec;
+  double get mouthOpenThreshold => _mouthOpenThreshold;
+  double get browCompressionThreshold => _browCompressionThreshold;
+  double get energyThreshold => _energyThreshold;
 
   SettingsProvider() {
     _init();
@@ -44,12 +53,16 @@ class SettingsProvider extends ChangeNotifier {
     _themeMode = await _repo.getThemeMode();
     _sensitivity = await _repo.getSensitivity();
     _frameRate = await _repo.getFrameRate();
+    _targetFps = await _repo.getTargetFps();
     _autoCapture = await _repo.getAutoCapture();
     _smoothingAlpha = await _repo.getSmoothingAlpha();
     _confidenceWindow = await _repo.getConfidenceWindow();
     _missingFramesNeutral = await _repo.getMissingFramesNeutral();
     _autoCaptureConfidence = await _repo.getAutoCaptureConfidence();
     _autoCaptureCooldownSec = await _repo.getAutoCaptureCooldownSec();
+    _mouthOpenThreshold = await _repo.getMouthOpenThreshold();
+    _browCompressionThreshold = await _repo.getBrowCompressionThreshold();
+    _energyThreshold = await _repo.getEnergyThreshold();
     notifyListeners();
   }
 
@@ -95,6 +108,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setTargetFps(int v) async {
+    _targetFps = v;
+    await _repo.setTargetFps(v);
+    notifyListeners();
+  }
+
   Future<void> setAutoCapture(bool v) async {
     _autoCapture = v;
     await _repo.setAutoCapture(v);
@@ -128,6 +147,24 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAutoCaptureCooldownSec(int v) async {
     _autoCaptureCooldownSec = v;
     await _repo.setAutoCaptureCooldownSec(v);
+    notifyListeners();
+  }
+
+  Future<void> setMouthOpenThreshold(double v) async {
+    _mouthOpenThreshold = v;
+    await _repo.setMouthOpenThreshold(v);
+    notifyListeners();
+  }
+
+  Future<void> setBrowCompressionThreshold(double v) async {
+    _browCompressionThreshold = v;
+    await _repo.setBrowCompressionThreshold(v);
+    notifyListeners();
+  }
+
+  Future<void> setEnergyThreshold(double v) async {
+    _energyThreshold = v;
+    await _repo.setEnergyThreshold(v);
     notifyListeners();
   }
 }
