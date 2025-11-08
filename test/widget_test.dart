@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('App renders onboarding and navigates to home after consent', (WidgetTester tester) async {
+  testWidgets('App renders onboarding and navigates to home after consent',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const EmotionApp());
 
     // Onboarding screen should show privacy text
