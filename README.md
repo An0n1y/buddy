@@ -68,6 +68,22 @@ Notes:
 - Onboarding (privacy-first), Settings, History (stub)
 - Provider state management
 
+## Success criteria
+
+- No AI/ML dependencies: uses a manual/mock stream for emotion events; no model files, no on-device inference.
+- Privacy-first: no network calls, no analytics/telemetry, no third-party SDK tracking.
+- iOS CI produces unsigned IPA: GitHub Actions builds with `--no-codesign` and packages `Runner-unsigned.ipa`.
+- Morphing Emoji animation: smooth morphs per emotion, blinking with emotion-dependent frequency, occasional double-blink and pre-blink squint.
+- Settings persistence: toggles and sliders stored via `SharedPreferences` through `SettingsRepository`.
+- Dark and light theme support: switchable in Settings.
+- Lints pass: project follows `flutter_lints` with extra rules (package imports, debouncer disposal, etc.).
+
+## Privacy
+
+- The app does not collect, transmit, or store personal data beyond local settings (theme/feedback toggles).
+- Camera frames are not uploaded or analyzed by ML models; preview is shown locally only.
+- No network requests are performed; you can verify by searching for `http`, `dio`, or `socket` usages (none present).
+
 ## Troubleshooting
 
 - Device id typos: use `emulator-5554` (not `emulato-5554`). Run `flutter devices` to confirm ids.
