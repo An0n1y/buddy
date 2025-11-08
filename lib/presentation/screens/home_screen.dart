@@ -65,17 +65,20 @@ class _HomeScreenState extends State<HomeScreen> {
               return IconButton(
                 tooltip: tooltip,
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   if (status == PermissionStatus.denied ||
                       status == PermissionStatus.restricted ||
                       status == PermissionStatus.permanentlyDenied) {
                     await openAppSettings();
+                    if (!mounted) return;
                     setState(() {}); // refresh
                   } else if (status == PermissionStatus.granted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    messenger.showSnackBar(const SnackBar(
                         content: Text('Camera already granted')));
                   } else {
                     final result = await Permission.camera.request();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!mounted) return;
+                    messenger.showSnackBar(
                         SnackBar(content: Text('Camera status: $result')));
                     setState(() {});
                   }
