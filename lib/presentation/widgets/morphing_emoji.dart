@@ -9,10 +9,14 @@ class MorphingEmoji extends StatefulWidget {
       {super.key,
       required this.emotion,
       this.duration = const Duration(milliseconds: 400),
-      this.curve = Curves.easeInOut});
+      this.curve = Curves.easeInOut,
+      this.size = 120,
+      this.showFaceCircle = false});
   final Emotion emotion;
   final Duration duration;
   final Curve curve;
+  final double size;
+  final bool showFaceCircle;
 
   @override
   State<MorphingEmoji> createState() => _MorphingEmojiState();
@@ -232,8 +236,9 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         mouthOpenness: _mouthOpenness,
         faceColor: _faceColor,
         emotion: widget.emotion,
+        showFaceCircle: widget.showFaceCircle,
       ),
-      child: const SizedBox(width: 180, height: 180),
+      child: SizedBox(width: widget.size, height: widget.size),
     );
   }
 
@@ -254,7 +259,8 @@ class _EmojiPainter extends CustomPainter {
       required this.mouthCurve,
       required this.mouthOpenness,
       required this.faceColor,
-      required this.emotion});
+      required this.emotion,
+      required this.showFaceCircle});
   final double eyeOpenness;
   final double eyeWidth;
   final double eyebrowY;
@@ -263,29 +269,32 @@ class _EmojiPainter extends CustomPainter {
   final double mouthOpenness;
   final Color faceColor;
   final Emotion emotion;
+  final bool showFaceCircle;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width * 0.42;
 
-    // glow for high energy emotions
-    if (emotion == Emotion.happy || emotion == Emotion.funny) {
-      canvas.drawCircle(
-        center,
-        radius * 1.15,
-        Paint()
-          ..color = faceColor.withValues(alpha: 0.25)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24),
-      );
-    }
+    if (showFaceCircle) {
+      // glow for high energy emotions
+      if (emotion == Emotion.happy || emotion == Emotion.funny) {
+        canvas.drawCircle(
+          center,
+          radius * 1.15,
+          Paint()
+            ..color = faceColor.withValues(alpha: 0.25)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24),
+        );
+      }
 
-    final facePaint = Paint()
-      ..shader = RadialGradient(
-              colors: [faceColor.withValues(alpha: 0.95), faceColor],
-              radius: 0.9)
-          .createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, facePaint);
+      final facePaint = Paint()
+        ..shader = RadialGradient(
+                colors: [faceColor.withValues(alpha: 0.95), faceColor],
+                radius: 0.9)
+            .createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, facePaint);
+    }
 
     _drawEyes(canvas, center, radius);
     _drawBrows(canvas, center, radius);

@@ -6,6 +6,8 @@ import 'package:emotion_sense/presentation/screens/settings_screen.dart';
 import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
+import 'package:emotion_sense/presentation/providers/history_provider.dart';
+import 'package:emotion_sense/data/repositories/history_repository.dart';
 import 'package:emotion_sense/presentation/providers/settings_provider.dart';
 import 'package:emotion_sense/presentation/providers/camera_provider.dart';
 
@@ -19,6 +21,8 @@ class EmotionApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => CameraProvider()),
         ChangeNotifierProvider(create: (_) => EmotionProvider()),
+        ChangeNotifierProvider(
+            create: (_) => HistoryProvider(HistoryRepository())),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {

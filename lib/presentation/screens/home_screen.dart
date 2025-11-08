@@ -3,6 +3,8 @@ import 'package:emotion_sense/core/constants/emotions.dart';
 import 'package:emotion_sense/presentation/providers/camera_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
+import 'package:emotion_sense/presentation/providers/history_provider.dart';
+import 'package:emotion_sense/data/models/age_gender_data.dart';
 import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
 import 'package:emotion_sense/presentation/widgets/emotion_display_card.dart';
 import 'package:flutter/material.dart';
@@ -158,9 +160,27 @@ class _Controls extends StatelessWidget {
           onPressed: () async {
             final file = await camera.controller?.takePicture();
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(
-                    file != null ? 'Saved: ${file.path}' : 'Capture failed')));
+            if (file != null) {
+              // Add to history with current emotion info and stub age/gender.
+              final emotionProvider = context.read<EmotionProvider>();
+              final history = context.read<HistoryProvider>();
+              // Placeholder age/gender data (future: real estimation)
+              final stubAgeGender = AgeGenderData(
+                  ageRange: '25-30', gender: 'Unknown', confidence: 0.0);
+              await history.addCapture(
+                imagePath: file.path,
+                emotion: emotionProvider.current,
+                confidence: emotionProvider.confidence,
+                ageGender: stubAgeGender,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Saved: ${file.path}')),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Capture failed')),
+              );
+            }
           },
           icon: const Icon(Icons.camera),
         ),

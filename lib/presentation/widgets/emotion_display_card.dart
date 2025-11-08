@@ -28,7 +28,7 @@ class EmotionDisplayCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            MorphingEmoji(emotion: emotion),
+            MorphingEmoji(emotion: emotion, size: 80, showFaceCircle: false),
             const SizedBox(height: 16),
             Text(
               emotion.name.toUpperCase(),
