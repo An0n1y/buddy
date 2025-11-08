@@ -15,7 +15,7 @@ class CameraService {
   Future<void> initialize() async {
     final cameras = await availableCameras();
     // Prefer front camera
-    CameraDescription? front = cameras.firstWhere(
+    final front = cameras.firstWhere(
       (c) => c.lensDirection == CameraLensDirection.front,
       orElse: () => cameras.isNotEmpty
           ? cameras.first

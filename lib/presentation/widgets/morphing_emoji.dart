@@ -275,14 +275,15 @@ class _EmojiPainter extends CustomPainter {
         center,
         radius * 1.15,
         Paint()
-          ..color = faceColor.withOpacity(0.25)
+          ..color = faceColor.withValues(alpha: 0.25)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24),
       );
     }
 
     final facePaint = Paint()
       ..shader = RadialGradient(
-              colors: [faceColor.withOpacity(0.95), faceColor], radius: 0.9)
+              colors: [faceColor.withValues(alpha: 0.95), faceColor],
+              radius: 0.9)
           .createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, facePaint);
 
@@ -371,7 +372,8 @@ class _EmojiPainter extends CustomPainter {
   void _drawExtras(Canvas canvas, Offset center, double radius) {
     switch (emotion) {
       case Emotion.sad:
-        final tearPaint = Paint()..color = Colors.blueAccent.withOpacity(0.6);
+        final tearPaint = Paint()
+          ..color = Colors.blueAccent.withValues(alpha: 0.6);
         final tearCenter =
             Offset(center.dx - radius * 0.35, center.dy + radius * 0.05);
         final tear = Path()
@@ -409,7 +411,8 @@ class _EmojiPainter extends CustomPainter {
         break;
       case Emotion.funny:
         // small cheek circles
-        final cheekPaint = Paint()..color = Colors.pinkAccent.withOpacity(0.5);
+        final cheekPaint = Paint()
+          ..color = Colors.pinkAccent.withValues(alpha: 0.5);
         canvas.drawCircle(center + Offset(-radius * 0.55, radius * 0.15),
             radius * 0.12, cheekPaint);
         canvas.drawCircle(center + Offset(radius * 0.55, radius * 0.15),

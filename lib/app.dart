@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'presentation/screens/home_screen.dart';
-import 'presentation/screens/onboarding_screen.dart';
-import 'presentation/screens/settings_screen.dart';
-import 'presentation/screens/history_screen.dart';
+import 'package:emotion_sense/presentation/screens/home_screen.dart';
+import 'package:emotion_sense/presentation/screens/onboarding_screen.dart';
+import 'package:emotion_sense/presentation/screens/settings_screen.dart';
+import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:provider/provider.dart';
-import 'presentation/providers/emotion_provider.dart';
-import 'presentation/providers/settings_provider.dart';
-import 'presentation/providers/camera_provider.dart';
+import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
+import 'package:emotion_sense/presentation/providers/settings_provider.dart';
+import 'package:emotion_sense/presentation/providers/camera_provider.dart';
 
 class EmotionApp extends StatelessWidget {
   const EmotionApp({super.key});

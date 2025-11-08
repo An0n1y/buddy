@@ -1,4 +1,4 @@
-import 'emotion_result.dart';
+import 'package:emotion_sense/data/models/emotion_result.dart';
 
 class DetectionHistoryEntry {
   DetectionHistoryEntry({required this.result});

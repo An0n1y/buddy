@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app.dart';
+import 'package:emotion_sense/app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
