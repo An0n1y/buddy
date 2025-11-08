@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('App renders onboarding and navigates to home after consent',
-      (WidgetTester tester) async {
+      (tester) async {
     await tester.pumpWidget(const EmotionApp());
 
     // Onboarding screen should show privacy text
@@ -16,7 +16,7 @@ void main() {
 
     // Tap the checkbox
     await tester.tap(checkbox);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Continue button should exist
     final continueBtn = find.widgetWithText(ElevatedButton, 'Continue');
