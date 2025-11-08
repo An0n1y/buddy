@@ -1,6 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:emotion_sense/core/constants/emotions.dart';
 import 'package:emotion_sense/presentation/providers/camera_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:emotion_sense/presentation/providers/emotion_provider.dart';
 import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
 import 'package:emotion_sense/presentation/widgets/emotion_display_card.dart';
@@ -32,6 +33,57 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('EmotionSense'),
         actions: [
+          FutureBuilder<PermissionStatus>(
+            future: Permission.camera.status,
+            builder: (context, snapshot) {
+              final status = snapshot.data;
+              Color color;
+              IconData icon;
+              String tooltip;
+              switch (status) {
+                case PermissionStatus.granted:
+                  color = Colors.green;
+                  icon = Icons.videocam;
+                  tooltip = 'Camera granted';
+                  break;
+                case PermissionStatus.denied:
+                  color = Colors.orange;
+                  icon = Icons.videocam_off;
+                  tooltip = 'Camera denied';
+                  break;
+                case PermissionStatus.permanentlyDenied:
+                case PermissionStatus.restricted:
+                  color = Colors.red;
+                  icon = Icons.lock;
+                  tooltip = 'Enable in Settings';
+                  break;
+                default:
+                  color = Colors.grey;
+                  icon = Icons.help_outline;
+                  tooltip = 'Unknown';
+              }
+              return IconButton(
+                tooltip: tooltip,
+                onPressed: () async {
+                  if (status == PermissionStatus.denied ||
+                      status == PermissionStatus.restricted ||
+                      status == PermissionStatus.permanentlyDenied) {
+                    await openAppSettings();
+                    setState(() {}); // refresh
+                  } else if (status == PermissionStatus.granted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Camera already granted')));
+                  } else {
+                    final result = await Permission.camera.request();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Camera status: $result')));
+                    setState(() {});
+                  }
+                },
+                icon: Icon(icon, color: color),
+              );
+            },
+          ),
           IconButton(
               onPressed: () => Navigator.pushNamed(context, '/history'),
               icon: const Icon(Icons.history)),
