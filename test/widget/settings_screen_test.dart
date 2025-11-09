@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('SettingsScreen toggles age & gender visibility', (tester) async {
-  final provider = SettingsProvider.test();
+    final provider = SettingsProvider.test();
     await tester.pumpWidget(
       MultiProvider(
         providers: [ChangeNotifierProvider.value(value: provider)],
