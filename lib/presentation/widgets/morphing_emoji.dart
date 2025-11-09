@@ -104,7 +104,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = 0.0;
         _targetMouthCurve = 0.0;
         _targetMouthOpenness = 0.0;
-        _targetFaceColor = const Color(0xFFFFD700);
+        _targetFaceColor = const Color(0xFFF5D76E); // softer gold
         break;
       case Emotion.happy:
         _targetEyeOpenness = 0.6;
@@ -113,7 +113,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = 0.1;
         _targetMouthCurve = 1.0;
         _targetMouthOpenness = 0.0;
-        _targetFaceColor = const Color(0xFFFFE066);
+        _targetFaceColor = const Color(0xFFFFD54F); // warm amber
         break;
       case Emotion.sad:
         _targetEyeOpenness = 0.8;
@@ -122,7 +122,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = -0.2;
         _targetMouthCurve = -0.8;
         _targetMouthOpenness = 0.0;
-        _targetFaceColor = const Color(0xFF87CEEB);
+        _targetFaceColor = const Color(0xFF64B5F6); // calm blue
         break;
       case Emotion.angry:
         _targetEyeOpenness = 1.0;
@@ -131,7 +131,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = -0.3;
         _targetMouthCurve = -0.5;
         _targetMouthOpenness = 0.2;
-        _targetFaceColor = const Color(0xFFFF6347);
+        _targetFaceColor = const Color(0xFFE53935); // intense red
         break;
       case Emotion.surprised: // spec uses 'surprised'
         _targetEyeOpenness = 1.5;
@@ -140,7 +140,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = 0.0;
         _targetMouthCurve = 0.0;
         _targetMouthOpenness = 1.0;
-        _targetFaceColor = const Color(0xFFDDA0DD);
+        _targetFaceColor = const Color(0xFFBA68C8); // vivid purple
         break;
       case Emotion.funny:
         _targetEyeOpenness = 0.3;
@@ -149,7 +149,7 @@ class _MorphingEmojiState extends State<MorphingEmoji>
         _targetEyebrowAngle = 0.15;
         _targetMouthCurve = 1.2;
         _targetMouthOpenness = 0.6;
-        _targetFaceColor = const Color(0xFF90EE90);
+        _targetFaceColor = const Color(0xFF81C784); // lively green
         break;
     }
   }

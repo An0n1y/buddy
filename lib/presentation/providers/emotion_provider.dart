@@ -123,6 +123,8 @@ class EmotionProvider extends ChangeNotifier {
     double? mouthOpenThreshold,
     double? browCompressionThreshold,
     double? energyThreshold,
+    double? smileThreshold,
+    double? eyeOpenThreshold,
   }) {
     if (threshold != null) confidenceThreshold = threshold;
     if (sound != null) soundOn = sound;
@@ -149,6 +151,12 @@ class EmotionProvider extends ChangeNotifier {
       }
       if (energyThreshold != null) {
         _analysis.energyThreshold = energyThreshold;
+      }
+      if (smileThreshold != null) {
+        _analysis.smileThreshold = smileThreshold;
+      }
+      if (eyeOpenThreshold != null) {
+        _analysis.eyeOpenThreshold = eyeOpenThreshold;
       }
     }
   }

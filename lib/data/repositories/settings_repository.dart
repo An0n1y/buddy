@@ -19,6 +19,8 @@ class SettingsRepository {
   static const _kBrowCompTh = 'brow_compression_threshold';
   static const _kEnergyTh = 'energy_threshold';
   static const _kTargetFps = 'target_fps';
+  static const _kSmileTh = 'smile_threshold';
+  static const _kEyeOpenTh = 'eye_open_threshold';
 
   Future<bool> getShowAgeGender() async =>
       (await SharedPreferences.getInstance()).getBool(_kShowAgeGender) ?? true;
@@ -120,4 +122,14 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).getInt(_kTargetFps) ?? 15;
   Future<void> setTargetFps(int v) async =>
       (await SharedPreferences.getInstance()).setInt(_kTargetFps, v);
+
+  Future<double> getSmileThreshold() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kSmileTh) ?? 0.6;
+  Future<void> setSmileThreshold(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kSmileTh, v);
+
+  Future<double> getEyeOpenThreshold() async =>
+      (await SharedPreferences.getInstance()).getDouble(_kEyeOpenTh) ?? 0.5;
+  Future<void> setEyeOpenThreshold(double v) async =>
+      (await SharedPreferences.getInstance()).setDouble(_kEyeOpenTh, v);
 }

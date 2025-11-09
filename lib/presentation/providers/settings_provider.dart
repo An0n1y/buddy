@@ -22,6 +22,8 @@ class SettingsProvider extends ChangeNotifier {
   double _mouthOpenThreshold = 0.22;
   double _browCompressionThreshold = 0.12;
   double _energyThreshold = 1.2;
+  double _smileThreshold = 0.6;
+  double _eyeOpenThreshold = 0.5;
 
   bool get showAgeGender => _showAgeGender;
   bool get useLottie => _useLottie;
@@ -40,6 +42,8 @@ class SettingsProvider extends ChangeNotifier {
   double get mouthOpenThreshold => _mouthOpenThreshold;
   double get browCompressionThreshold => _browCompressionThreshold;
   double get energyThreshold => _energyThreshold;
+  double get smileThreshold => _smileThreshold;
+  double get eyeOpenThreshold => _eyeOpenThreshold;
 
   SettingsProvider() {
     _init();
@@ -63,6 +67,8 @@ class SettingsProvider extends ChangeNotifier {
     _mouthOpenThreshold = await _repo.getMouthOpenThreshold();
     _browCompressionThreshold = await _repo.getBrowCompressionThreshold();
     _energyThreshold = await _repo.getEnergyThreshold();
+    _smileThreshold = await _repo.getSmileThreshold();
+    _eyeOpenThreshold = await _repo.getEyeOpenThreshold();
     notifyListeners();
   }
 
@@ -165,6 +171,18 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setEnergyThreshold(double v) async {
     _energyThreshold = v;
     await _repo.setEnergyThreshold(v);
+    notifyListeners();
+  }
+
+  Future<void> setSmileThreshold(double v) async {
+    _smileThreshold = v;
+    await _repo.setSmileThreshold(v);
+    notifyListeners();
+  }
+
+  Future<void> setEyeOpenThreshold(double v) async {
+    _eyeOpenThreshold = v;
+    await _repo.setEyeOpenThreshold(v);
     notifyListeners();
   }
 }

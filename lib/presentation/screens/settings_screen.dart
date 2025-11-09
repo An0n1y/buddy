@@ -151,6 +151,28 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           ListTile(
+            title: const Text('Smile probability threshold'),
+            subtitle: Slider(
+              value: s.smileThreshold,
+              min: 0.3,
+              max: 0.9,
+              divisions: 12,
+              label: s.smileThreshold.toStringAsFixed(2),
+              onChanged: (v) => s.setSmileThreshold(v),
+            ),
+          ),
+          ListTile(
+            title: const Text('Eye open probability threshold'),
+            subtitle: Slider(
+              value: s.eyeOpenThreshold,
+              min: 0.2,
+              max: 0.9,
+              divisions: 14,
+              label: s.eyeOpenThreshold.toStringAsFixed(2),
+              onChanged: (v) => s.setEyeOpenThreshold(v),
+            ),
+          ),
+          ListTile(
             title: const Text('Confidence window size'),
             subtitle: Slider(
               value: s.confidenceWindow.toDouble(),

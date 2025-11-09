@@ -95,6 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
       mouthOpenThreshold: settings.mouthOpenThreshold,
       browCompressionThreshold: settings.browCompressionThreshold,
       energyThreshold: settings.energyThreshold,
+      smileThreshold: settings.smileThreshold,
+      eyeOpenThreshold: settings.eyeOpenThreshold,
     );
 
     return Scaffold(
