@@ -167,41 +167,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          // Reduce vertical padding to let the camera view be taller.
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
             children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CameraPreviewWidget(controller: camera.controller),
-                    ),
-                    // Top-center gold face (small) persistent indicator
-                    const Positioned(
-                      top: 8,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: _TopCenterEmoji(),
-                      ),
-                    ),
-                    // Centered emoji overlay without background
-                    // Face-tracked emoji (fallback to center if no bounds)
-                    _FaceTrackedEmoji(emotion: emotion),
-                    // Bottom-right age/gender overlay chip (if enabled)
-                    if (settings.showAgeGender)
-                      Positioned(
-                        right: 8,
-                        bottom: 8,
-                        child: _AgeGenderChip(),
-                      ),
-                  ],
-                ),
+              // Make the camera preview occupy more vertical space.
+              const Expanded(
+                flex: 10,
+                child: _CameraStack(),
               ),
               const SizedBox(height: 12),
               _Controls(camera: camera),
-              const SizedBox(height: 8),
-              _ManualOverride(emotion: emotion),
             ],
           ),
         ),
@@ -210,35 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _AgeGenderChip extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final ageGender =
-        context.select<EmotionProvider, AgeGenderData?>((p) => p.ageGender);
-    final text =
-        ageGender == null ? '—' : '${ageGender.ageRange} • ${ageGender.gender}';
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.person, size: 14, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// Note: Age/Gender UI chip removed for now (age/gender detection not implemented on-device).
 
 class _Controls extends StatelessWidget {
   const _Controls({required this.camera});
@@ -303,63 +251,7 @@ class _Controls extends StatelessWidget {
   }
 }
 
-class _ManualOverride extends StatelessWidget {
-  const _ManualOverride({required this.emotion});
-  final EmotionProvider emotion;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: Emotion.values.map((e) {
-        return ElevatedButton(
-          onPressed: () => emotion.manualOverride(e),
-          child: Text(e.emoji),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _FaceTrackedEmoji extends StatelessWidget {
-  const _FaceTrackedEmoji({required this.emotion});
-  final EmotionProvider emotion;
-
-  @override
-  Widget build(BuildContext context) {
-    final bounds = emotion.smoothedFaceBounds?.rect ?? emotion.faceBounds?.rect;
-    final size = MediaQuery.of(context).size;
-    const baseSize = 120.0;
-    if (bounds == null) {
-      return Align(
-        alignment: Alignment.center,
-        child: MorphingEmoji(
-          emotion: emotion.current,
-          size: baseSize,
-          showFaceCircle: false,
-        ),
-      );
-    }
-    // Scale emoji relative to face width (normalized) with clamp.
-    final scaled = (bounds.width * size.width * 0.9).clamp(80.0, 180.0);
-    final left =
-        bounds.left * size.width + (bounds.width * size.width - scaled) / 2;
-    final top =
-        bounds.top * size.height + (bounds.height * size.height - scaled) / 2;
-    return Positioned(
-      left: left,
-      top: top,
-      width: scaled,
-      height: scaled,
-      child: MorphingEmoji(
-        emotion: emotion.current,
-        size: scaled,
-        showFaceCircle: false,
-      ),
-    );
-  }
-}
+// Face-tracked/center emoji overlay removed to avoid duplicate; keeping only the top-center emoji.
 
 class _TopCenterEmoji extends StatelessWidget {
   const _TopCenterEmoji();
@@ -370,6 +262,29 @@ class _TopCenterEmoji extends StatelessWidget {
       emotion: emotion.current,
       size: 64,
       showFaceCircle: true,
+    );
+  }
+}
+
+// Camera preview + overlays (top-center emoji only)
+class _CameraStack extends StatelessWidget {
+  const _CameraStack();
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = context.watch<CameraProvider>();
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: CameraPreviewWidget(controller: camera.controller),
+        ),
+        const Positioned(
+          top: 8,
+          left: 0,
+          right: 0,
+          child: Center(child: _TopCenterEmoji()),
+        ),
+      ],
     );
   }
 }
