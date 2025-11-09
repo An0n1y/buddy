@@ -103,17 +103,17 @@ class SettingsRepository {
 
   // Thresholds
   Future<double> getMouthOpenThreshold() async =>
-      (await SharedPreferences.getInstance()).getDouble(_kMouthOpenTh) ?? 0.22;
+      (await SharedPreferences.getInstance()).getDouble(_kMouthOpenTh) ?? 0.18;
   Future<void> setMouthOpenThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kMouthOpenTh, v);
 
   Future<double> getBrowCompressionThreshold() async =>
-      (await SharedPreferences.getInstance()).getDouble(_kBrowCompTh) ?? 0.12;
+      (await SharedPreferences.getInstance()).getDouble(_kBrowCompTh) ?? 0.10;
   Future<void> setBrowCompressionThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kBrowCompTh, v);
 
   Future<double> getEnergyThreshold() async =>
-      (await SharedPreferences.getInstance()).getDouble(_kEnergyTh) ?? 1.2;
+      (await SharedPreferences.getInstance()).getDouble(_kEnergyTh) ?? 0.25;
   Future<void> setEnergyThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kEnergyTh, v);
 
@@ -124,12 +124,12 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).setInt(_kTargetFps, v);
 
   Future<double> getSmileThreshold() async =>
-      (await SharedPreferences.getInstance()).getDouble(_kSmileTh) ?? 0.6;
+      (await SharedPreferences.getInstance()).getDouble(_kSmileTh) ?? 0.50;
   Future<void> setSmileThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kSmileTh, v);
 
   Future<double> getEyeOpenThreshold() async =>
-      (await SharedPreferences.getInstance()).getDouble(_kEyeOpenTh) ?? 0.5;
+      (await SharedPreferences.getInstance()).getDouble(_kEyeOpenTh) ?? 0.45;
   Future<void> setEyeOpenThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kEyeOpenTh, v);
 }

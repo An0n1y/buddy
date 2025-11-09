@@ -167,17 +167,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          // Reduce vertical padding to let the camera view be taller.
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Make the camera preview occupy more vertical space.
-              const Expanded(
-                flex: 10,
-                child: _CameraStack(),
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CameraPreviewWidget(controller: camera.controller),
+                    ),
+                    const Positioned(
+                      top: 8,
+                      left: 0,
+                      right: 0,
+                      child: Center(child: _TopCenterEmoji()),
+                    ),
+                    if (settings.showAgeGender)
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: _AgeGenderChip(),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               _Controls(camera: camera),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -187,6 +203,36 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // Note: Age/Gender UI chip removed for now (age/gender detection not implemented on-device).
+
+class _AgeGenderChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ageGender =
+        context.select<EmotionProvider, AgeGenderData?>((p) => p.ageGender);
+    final text =
+        ageGender == null ? '—' : '${ageGender.ageRange} • ${ageGender.gender}';
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _Controls extends StatelessWidget {
   const _Controls({required this.camera});
@@ -266,25 +312,4 @@ class _TopCenterEmoji extends StatelessWidget {
   }
 }
 
-// Camera preview + overlays (top-center emoji only)
-class _CameraStack extends StatelessWidget {
-  const _CameraStack();
-
-  @override
-  Widget build(BuildContext context) {
-    final camera = context.watch<CameraProvider>();
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: CameraPreviewWidget(controller: camera.controller),
-        ),
-        const Positioned(
-          top: 8,
-          left: 0,
-          right: 0,
-          child: Center(child: _TopCenterEmoji()),
-        ),
-      ],
-    );
-  }
-}
+// _CameraStack widget removed (no longer used after layout restoration).

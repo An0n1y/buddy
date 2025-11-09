@@ -19,11 +19,11 @@ class SettingsProvider extends ChangeNotifier {
   double _autoCaptureConfidence = 0.75;
   int _autoCaptureCooldownSec = 8;
   // New thresholds for heuristic / model tuning
-  double _mouthOpenThreshold = 0.22;
-  double _browCompressionThreshold = 0.12;
-  double _energyThreshold = 1.2;
-  double _smileThreshold = 0.6;
-  double _eyeOpenThreshold = 0.5;
+  double _mouthOpenThreshold = 0.18;
+  double _browCompressionThreshold = 0.10;
+  double _energyThreshold = 0.25;
+  double _smileThreshold = 0.50;
+  double _eyeOpenThreshold = 0.45;
 
   bool get showAgeGender => _showAgeGender;
   bool get useLottie => _useLottie;
@@ -69,6 +69,11 @@ class SettingsProvider extends ChangeNotifier {
     _energyThreshold = await _repo.getEnergyThreshold();
     _smileThreshold = await _repo.getSmileThreshold();
     _eyeOpenThreshold = await _repo.getEyeOpenThreshold();
+    // One-time normalization: fix out-of-range energy thresholds from older defaults.
+    if (_energyThreshold > 1.0) {
+      _energyThreshold = 0.25;
+      await _repo.setEnergyThreshold(_energyThreshold);
+    }
     notifyListeners();
   }
 

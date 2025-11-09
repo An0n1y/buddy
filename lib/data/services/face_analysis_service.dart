@@ -59,12 +59,12 @@ class FaceAnalysisService {
   int _skipCounter = 0;
   int targetFps = 15; // configurable
   // Thresholds (externally tunable)
-  double mouthOpenThreshold = 0.22;
-  double browCompressionThreshold = 0.12;
-  double energyThreshold = 1.2;
+  double mouthOpenThreshold = 0.18;
+  double browCompressionThreshold = 0.10;
+  double energyThreshold = 0.25;
   // ML probabilities thresholds
-  double smileThreshold = 0.6;
-  double eyeOpenThreshold = 0.5;
+  double smileThreshold = 0.50;
+  double eyeOpenThreshold = 0.45;
 
   // FaceIDS controller / instance (placeholder; package docs sparse)
   // dynamic _faceIds; // using dynamic due to limited API reference
