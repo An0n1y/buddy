@@ -143,9 +143,9 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Energy (motion) threshold'),
             subtitle: Slider(
               value: s.energyThreshold,
-              min: 0.6,
-              max: 2.0,
-              divisions: 14,
+              min: 0.05,
+              max: 1.0,
+              divisions: 19,
               label: s.energyThreshold.toStringAsFixed(2),
               onChanged: (v) => s.setEnergyThreshold(v),
             ),

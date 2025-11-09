@@ -49,6 +49,49 @@ class SettingsProvider extends ChangeNotifier {
     _init();
   }
 
+  // Test-only constructor: initializes synchronously with provided values, skipping async SharedPreferences.
+  SettingsProvider.test({
+    bool showAgeGender = true,
+    bool useLottie = false,
+    bool soundOn = true,
+    bool hapticOn = true,
+    ThemeMode themeMode = ThemeMode.system,
+    double sensitivity = 0.6,
+    int frameRate = 15,
+    int targetFps = 15,
+    bool autoCapture = true,
+    double smoothingAlpha = 0.4,
+    int confidenceWindow = 12,
+    int missingFramesNeutral = 45,
+    double autoCaptureConfidence = 0.75,
+    int autoCaptureCooldownSec = 8,
+    double mouthOpenThreshold = 0.18,
+    double browCompressionThreshold = 0.10,
+    double energyThreshold = 0.25,
+    double smileThreshold = 0.50,
+    double eyeOpenThreshold = 0.45,
+  }) {
+    _showAgeGender = showAgeGender;
+    _useLottie = useLottie;
+    _soundOn = soundOn;
+    _hapticOn = hapticOn;
+    _themeMode = themeMode;
+    _sensitivity = sensitivity;
+    _frameRate = frameRate;
+    _targetFps = targetFps;
+    _autoCapture = autoCapture;
+    _smoothingAlpha = smoothingAlpha;
+    _confidenceWindow = confidenceWindow;
+    _missingFramesNeutral = missingFramesNeutral;
+    _autoCaptureConfidence = autoCaptureConfidence;
+    _autoCaptureCooldownSec = autoCaptureCooldownSec;
+    _mouthOpenThreshold = mouthOpenThreshold;
+    _browCompressionThreshold = browCompressionThreshold;
+    _energyThreshold = energyThreshold;
+    _smileThreshold = smileThreshold;
+    _eyeOpenThreshold = eyeOpenThreshold;
+  }
+
   Future<void> _init() async {
     _showAgeGender = await _repo.getShowAgeGender();
     _useLottie = await _repo.getUseLottie();
