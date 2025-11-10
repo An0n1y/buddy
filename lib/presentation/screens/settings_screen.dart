@@ -13,6 +13,12 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           SwitchListTile(
+            title: const Text('Enable ethnicity classification'),
+            subtitle: const Text('Sensitive attribute – opt-in only'),
+            value: s.ethnicityEnabled,
+            onChanged: (v) => s.setEthnicityEnabled(v),
+          ),
+          SwitchListTile(
             title: const Text('Show age & gender'),
             value: s.showAgeGender,
             onChanged: (v) => s.setShowAgeGender(v),
@@ -115,61 +121,6 @@ class SettingsScreen extends StatelessWidget {
               divisions: 14,
               label: s.smoothingAlpha.toStringAsFixed(2),
               onChanged: (v) => s.setSmoothingAlpha(v),
-            ),
-          ),
-          ListTile(
-            title: const Text('Mouth open threshold'),
-            subtitle: Slider(
-              value: s.mouthOpenThreshold,
-              min: 0.05,
-              max: 0.5,
-              divisions: 45,
-              label: s.mouthOpenThreshold.toStringAsFixed(2),
-              onChanged: (v) => s.setMouthOpenThreshold(v),
-            ),
-          ),
-          ListTile(
-            title: const Text('Brow compression threshold'),
-            subtitle: Slider(
-              value: s.browCompressionThreshold,
-              min: 0.02,
-              max: 0.3,
-              divisions: 28,
-              label: s.browCompressionThreshold.toStringAsFixed(2),
-              onChanged: (v) => s.setBrowCompressionThreshold(v),
-            ),
-          ),
-          ListTile(
-            title: const Text('Energy (motion) threshold'),
-            subtitle: Slider(
-              value: s.energyThreshold,
-              min: 0.05,
-              max: 1.0,
-              divisions: 19,
-              label: s.energyThreshold.toStringAsFixed(2),
-              onChanged: (v) => s.setEnergyThreshold(v),
-            ),
-          ),
-          ListTile(
-            title: const Text('Smile probability threshold'),
-            subtitle: Slider(
-              value: s.smileThreshold,
-              min: 0.3,
-              max: 0.9,
-              divisions: 12,
-              label: s.smileThreshold.toStringAsFixed(2),
-              onChanged: (v) => s.setSmileThreshold(v),
-            ),
-          ),
-          ListTile(
-            title: const Text('Eye open probability threshold'),
-            subtitle: Slider(
-              value: s.eyeOpenThreshold,
-              min: 0.2,
-              max: 0.9,
-              divisions: 14,
-              label: s.eyeOpenThreshold.toStringAsFixed(2),
-              onChanged: (v) => s.setEyeOpenThreshold(v),
             ),
           ),
           ListTile(

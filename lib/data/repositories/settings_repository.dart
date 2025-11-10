@@ -21,6 +21,7 @@ class SettingsRepository {
   static const _kTargetFps = 'target_fps';
   static const _kSmileTh = 'smile_threshold';
   static const _kEyeOpenTh = 'eye_open_threshold';
+  static const _kEthnicityEnabled = 'ethnicity_enabled';
 
   Future<bool> getShowAgeGender() async =>
       (await SharedPreferences.getInstance()).getBool(_kShowAgeGender) ?? true;
@@ -132,4 +133,10 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).getDouble(_kEyeOpenTh) ?? 0.45;
   Future<void> setEyeOpenThreshold(double v) async =>
       (await SharedPreferences.getInstance()).setDouble(_kEyeOpenTh, v);
+
+  Future<bool> getEthnicityEnabled() async =>
+      (await SharedPreferences.getInstance()).getBool(_kEthnicityEnabled) ??
+      false;
+  Future<void> setEthnicityEnabled(bool v) async =>
+      (await SharedPreferences.getInstance()).setBool(_kEthnicityEnabled, v);
 }

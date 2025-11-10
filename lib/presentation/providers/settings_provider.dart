@@ -13,17 +13,12 @@ class SettingsProvider extends ChangeNotifier {
   int _frameRate = 15; // fps
   int _targetFps = 15; // analysis target FPS
   bool _autoCapture = true;
-  double _smoothingAlpha = 0.4;
-  int _confidenceWindow = 12;
-  int _missingFramesNeutral = 45;
-  double _autoCaptureConfidence = 0.75;
-  int _autoCaptureCooldownSec = 8;
-  // New thresholds for heuristic / model tuning
-  double _mouthOpenThreshold = 0.18;
-  double _browCompressionThreshold = 0.10;
-  double _energyThreshold = 0.25;
-  double _smileThreshold = 0.50;
-  double _eyeOpenThreshold = 0.45;
+  double _smoothingAlpha = 0.4; // exponential smoothing of confidence
+  int _confidenceWindow = 12; // window size for rolling confidence ops
+  int _missingFramesNeutral = 45; // frames before auto reversion to neutral
+  double _autoCaptureConfidence = 0.75; // threshold for auto capture trigger
+  int _autoCaptureCooldownSec = 8; // cooldown before next auto capture
+  bool _ethnicityEnabled = false; // opt-in gate
 
   bool get showAgeGender => _showAgeGender;
   bool get useLottie => _useLottie;
@@ -39,11 +34,7 @@ class SettingsProvider extends ChangeNotifier {
   int get missingFramesNeutral => _missingFramesNeutral;
   double get autoCaptureConfidence => _autoCaptureConfidence;
   int get autoCaptureCooldownSec => _autoCaptureCooldownSec;
-  double get mouthOpenThreshold => _mouthOpenThreshold;
-  double get browCompressionThreshold => _browCompressionThreshold;
-  double get energyThreshold => _energyThreshold;
-  double get smileThreshold => _smileThreshold;
-  double get eyeOpenThreshold => _eyeOpenThreshold;
+  bool get ethnicityEnabled => _ethnicityEnabled;
 
   SettingsProvider() {
     _init();
@@ -65,11 +56,6 @@ class SettingsProvider extends ChangeNotifier {
     int missingFramesNeutral = 45,
     double autoCaptureConfidence = 0.75,
     int autoCaptureCooldownSec = 8,
-    double mouthOpenThreshold = 0.18,
-    double browCompressionThreshold = 0.10,
-    double energyThreshold = 0.25,
-    double smileThreshold = 0.50,
-    double eyeOpenThreshold = 0.45,
   }) {
     _showAgeGender = showAgeGender;
     _useLottie = useLottie;
@@ -85,11 +71,6 @@ class SettingsProvider extends ChangeNotifier {
     _missingFramesNeutral = missingFramesNeutral;
     _autoCaptureConfidence = autoCaptureConfidence;
     _autoCaptureCooldownSec = autoCaptureCooldownSec;
-    _mouthOpenThreshold = mouthOpenThreshold;
-    _browCompressionThreshold = browCompressionThreshold;
-    _energyThreshold = energyThreshold;
-    _smileThreshold = smileThreshold;
-    _eyeOpenThreshold = eyeOpenThreshold;
   }
 
   Future<void> _init() async {
@@ -107,16 +88,7 @@ class SettingsProvider extends ChangeNotifier {
     _missingFramesNeutral = await _repo.getMissingFramesNeutral();
     _autoCaptureConfidence = await _repo.getAutoCaptureConfidence();
     _autoCaptureCooldownSec = await _repo.getAutoCaptureCooldownSec();
-    _mouthOpenThreshold = await _repo.getMouthOpenThreshold();
-    _browCompressionThreshold = await _repo.getBrowCompressionThreshold();
-    _energyThreshold = await _repo.getEnergyThreshold();
-    _smileThreshold = await _repo.getSmileThreshold();
-    _eyeOpenThreshold = await _repo.getEyeOpenThreshold();
-    // One-time normalization: fix out-of-range energy thresholds from older defaults.
-    if (_energyThreshold > 1.0) {
-      _energyThreshold = 0.25;
-      await _repo.setEnergyThreshold(_energyThreshold);
-    }
+    _ethnicityEnabled = await _repo.getEthnicityEnabled();
     notifyListeners();
   }
 
@@ -204,33 +176,11 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setMouthOpenThreshold(double v) async {
-    _mouthOpenThreshold = v;
-    await _repo.setMouthOpenThreshold(v);
+  Future<void> setEthnicityEnabled(bool v) async {
+    _ethnicityEnabled = v;
+    await _repo.setEthnicityEnabled(v);
     notifyListeners();
   }
 
-  Future<void> setBrowCompressionThreshold(double v) async {
-    _browCompressionThreshold = v;
-    await _repo.setBrowCompressionThreshold(v);
-    notifyListeners();
-  }
-
-  Future<void> setEnergyThreshold(double v) async {
-    _energyThreshold = v;
-    await _repo.setEnergyThreshold(v);
-    notifyListeners();
-  }
-
-  Future<void> setSmileThreshold(double v) async {
-    _smileThreshold = v;
-    await _repo.setSmileThreshold(v);
-    notifyListeners();
-  }
-
-  Future<void> setEyeOpenThreshold(double v) async {
-    _eyeOpenThreshold = v;
-    await _repo.setEyeOpenThreshold(v);
-    notifyListeners();
-  }
+  // End of settings mutations.
 }

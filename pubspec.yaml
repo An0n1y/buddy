@@ -1,5 +1,5 @@
 name: emotion_sense
-description: Real-time emotion, age, and gender detection app (no-ML mode) built with Flutter.
+description: On-device face emotion, age, and gender recognition (offline, TFLite + ML Kit).
 publish_to: 'none'
 
 version: 0.1.0+1
@@ -12,30 +12,25 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Camera & utilities
-  camera: ^0.10.0
-  image: ^4.0.0
-  # On-device free face detection (Google ML Kit)
-  google_mlkit_face_detection: ^0.11.0
+  # Camera & face detection
+  camera: ^0.11.0
+  google_mlkit_face_detection: ^0.10.0
 
   # State Management
   provider: ^6.0.0
 
   # UI/UX
-  flutter_animate: ^4.0.0
-  lottie: ^3.0.0
+  flutter_animate: ^4.5.0
   google_fonts: ^6.0.0
-
-  # Audio & Haptics
-  audioplayers: ^5.0.0
+  audioplayers: ^5.2.1
 
   # Storage & Permissions
-  shared_preferences: ^2.0.0
-  permission_handler: ^11.0.0
+  shared_preferences: ^2.2.2
+  permission_handler: ^11.4.0
   path_provider: ^2.0.0
 
   # Utilities
-  intl: ^0.18.0
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
@@ -46,11 +41,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/lottie/
-    - assets/sounds/
-    - assets/icons/
-    - assets/models/  # Reserved (not used in no-ML mode)
-    # Place model files here (not committed):
-  # Provide models later:
-  # - assets/models/emotion.tflite
-  # - assets/models/age_gender.tflite
+    - assets/models/age_gender_model.json
+    - assets/models/age_gender.csv
