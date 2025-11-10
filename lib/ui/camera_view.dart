@@ -77,74 +77,48 @@ class _CameraViewState extends State<CameraView> {
       body: SafeArea(
         child: Column(
           children: [
-            // Camera preview (smaller height)
+            // Camera preview with overlay (larger height - 65%)
             Expanded(
-              flex: 3,
+              flex: 65,
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     CameraPreviewWidget(controller: camera.controller),
-                    // Face detection overlay with morphing emoji and info
+                    // Face detection overlay with bounding boxes
                     if (_attrs != null) _FaceBoxesOverlay(provider: _attrs!),
+                    // Top-center: Primary emotion with morphing emoji
+                    if (attrs != null && attrs.faces.isNotEmpty)
+                      Positioned(
+                        top: 16,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: _PrimaryEmotionCard(face: attrs.faces.first),
+                        ),
+                      ),
+                    // Top-right: Age/Gender/Ethnicity card (capsule)
+                    if (settings.showAgeGender && attrs != null && attrs.faces.isNotEmpty)
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: _AgeGenderEthnicityCard(
+                          face: attrs.faces.first,
+                          ethnicityEnabled: settings.ethnicityEnabled,
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
-            // Emotion display and age/gender card
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Primary emotion display
-                      if (attrs != null && attrs.faces.isNotEmpty)
-                        _PrimaryEmotionCard(face: attrs.faces.first)
-                      else
-                        const Card(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text('Detecting face...'),
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      // Age & Gender card
-                      if (settings.showAgeGender && attrs != null && attrs.faces.isNotEmpty)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('${attrs.faces.first.ageRange} yrs',
-                                    style: Theme.of(context).textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text('${attrs.faces.first.gender} (${(attrs.faces.first.confidence * 100).toInt()}%)',
-                                    style: Theme.of(context).textTheme.bodyMedium),
-                                if (settings.ethnicityEnabled && attrs.faces.first.ethnicity != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text('${attrs.faces.first.ethnicity}',
-                                      style: Theme.of(context).textTheme.bodySmall),
-                                ]
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Control buttons row
-            Padding(
-              padding: const EdgeInsets.all(12),
+            // Control buttons row (fixed height)
+            Container(
+              height: 80,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Camera switch button
                   IconButton.filled(
@@ -152,6 +126,7 @@ class _CameraViewState extends State<CameraView> {
                     icon: const Icon(Icons.cameraswitch),
                     tooltip: 'Switch camera',
                   ),
+                  const SizedBox(width: 16),
                   // Flash button
                   IconButton.filled(
                     onPressed: () {
@@ -167,7 +142,8 @@ class _CameraViewState extends State<CameraView> {
                         : Icons.flash_off),
                     tooltip: 'Toggle flash',
                   ),
-                  // Capture button
+                  const SizedBox(width: 24),
+                  // Capture button (center, prominent)
                   FilledButton.icon(
                     onPressed: () async {
                       if (camera.controller == null) return;
@@ -209,6 +185,12 @@ class _CameraViewState extends State<CameraView> {
                     },
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Capture'),
+                  ),
+                  const SizedBox(width: 24),
+                  // Placeholder for balance
+                  SizedBox(
+                    width: 40,
+                    child: Container(),
                   ),
                 ],
               ),
@@ -267,6 +249,46 @@ class _PrimaryEmotionCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Age/Gender/Ethnicity card displayed as a capsule in top-right
+class _AgeGenderEthnicityCard extends StatelessWidget {
+  const _AgeGenderEthnicityCard({
+    required this.face,
+    required this.ethnicityEnabled,
+  });
+  final FaceAttributes face;
+  final bool ethnicityEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ethnicity = ethnicityEnabled && face.ethnicity != null
+        ? ' • ${face.ethnicity}'
+        : '';
+    
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              face.ageRange,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${face.gender}$ethnicity',
+              style: Theme.of(context).textTheme.labelSmall,
             ),
           ],
         ),

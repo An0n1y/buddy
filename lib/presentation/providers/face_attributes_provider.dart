@@ -67,8 +67,8 @@ class FaceAttributesProvider extends ChangeNotifier {
 
   Future<void> start() async {
     if (_running) return;
-    // Skip TFLite init on web and when user has disabled sensitive attributes.
-    if (!kIsWeb && _settings.ethnicityEnabled) {
+    // Always initialize inference for age/gender (ethnicity is optional)
+    if (!kIsWeb) {
       await _inference.initialize();
     }
     await _camera.startImageStream();
@@ -189,11 +189,11 @@ class FaceAttributesProvider extends ChangeNotifier {
         final emotion = EmotionResult(
             emotion: inferredEmotion, confidence: inferredConfidence);
 
-        // Multitask (Age/Gender/Ethnicity) preprocessing only if allowed and interpreter exists
+        // Multitask (Age/Gender/Ethnicity) preprocessing
         String gender = 'Unknown';
         var ageRange = '25-30';
         String? ethnicity;
-        if (_settings.ethnicityEnabled && _inference.multiInputShape != null) {
+        if (_inference.multiInputShape != null) {
           final shape = _inference.multiInputShape!; // [1,H,W,C]
           final w = shape[2];
           final h = shape[1];
@@ -217,7 +217,10 @@ class FaceAttributesProvider extends ChangeNotifier {
           final res = await _inference.estimateAttributes(input, shape);
           ageRange = res.ageRange;
           gender = res.gender;
-          ethnicity = res.ethnicity;
+          // Only include ethnicity if enabled
+          if (_settings.ethnicityEnabled) {
+            ethnicity = res.ethnicity;
+          }
         }
 
         // Compute a simple stable key from quantized rect to smooth confidence
