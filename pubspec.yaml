@@ -42,4 +42,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/age_gender_model.json
-    - assets/models/age_gender.csv

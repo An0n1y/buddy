@@ -36,3 +36,8 @@ linked_*.ds
 
 # Assets generated
 assets/generated/
+
+# Large model/dataset files (too large for GitHub)
+assets/models/age_gender.csv
+assets/models/*.pkl
+assets/models/age_gender_ethnicity.tflite
