@@ -19,13 +19,15 @@ You now have a production-ready Flutter emotion detection app with **real traine
 ## What Changed
 
 ### 1. **Removed Large Files**
+
 ```
 ❌ age_gender.csv (190 MB) - too large for GitHub
-❌ age_gender_model.pkl (40 MB) - too large for GitHub  
+❌ age_gender_model.pkl (40 MB) - too large for GitHub
 ❌ age_gender_ethnicity.tflite (1 KB placeholder) - unused
 ```
 
 ### 2. **Added Real Model Weights**
+
 ```
 ✅ model_weights.json (0.36 MB) - exported sklearn feature importance scores
 ✅ inference_service_mobile.dart - now uses real model weights
@@ -33,13 +35,16 @@ You now have a production-ready Flutter emotion detection app with **real traine
 ```
 
 ### 3. **Updated Dependencies**
+
 ```diff
 - tflite_flutter: ^0.10.0  ❌ removed (FFI conflicts on web)
 + Pure Dart inference ✅
 ```
 
 ### 4. **Enhanced Inference Logic**
+
 The new `InferenceService` now:
+
 - Loads real model weights from `model_weights.json`
 - Computes pixel statistics (mean, std, median, contrast)
 - Uses feature importance scores to weight predictions
@@ -50,19 +55,22 @@ The new `InferenceService` now:
 ## Model Performance
 
 ### Training Data
+
 - **Dataset:** 23,705 face images (48x48 grayscale)
 - **Age:** 5 bins (0-12, 13-18, 19-29, 30-49, 50+)
 - **Gender:** Binary (Male/Female)
 - **Ethnicity:** 5 categories (placeholder in training data)
 
 ### Model Accuracies
-| Task | Accuracy |
-|------|----------|
-| Age Classification | **98.78%** |
-| Gender Classification | **99.40%** |
+
+| Task                     | Accuracy               |
+| ------------------------ | ---------------------- |
+| Age Classification       | **98.78%**             |
+| Gender Classification    | **99.40%**             |
 | Ethnicity Classification | **100% (placeholder)** |
 
 ### Algorithm
+
 - **Type:** Random Forest (50 estimators, max_depth=15)
 - **Input:** Normalized 48x48 grayscale pixels (2304 features)
 - **Output:** Probability scores for each class
@@ -93,6 +101,7 @@ scripts/
 To set up automatic iOS builds in GitHub Actions:
 
 ### Step 1: Create `.github/workflows/build.yml`
+
 ```yaml
 name: Build & Test
 
@@ -109,8 +118,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-      
+          flutter-version: "3.24.0"
+
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
@@ -119,14 +128,15 @@ jobs:
 ```
 
 ### Step 2: iOS Build (Requires macOS Runner)
+
 ```yaml
-  build-ios:
-    runs-on: macos-latest  # Costs $10/month
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-      - run: flutter pub get
-      - run: flutter build ipa
+build-ios:
+  runs-on: macos-latest # Costs $10/month
+  steps:
+    - uses: actions/checkout@v4
+    - uses: subosito/flutter-action@v2
+    - run: flutter pub get
+    - run: flutter build ipa
 ```
 
 ---
@@ -134,23 +144,28 @@ jobs:
 ## How to Train a New Model
 
 ### 1. **Prepare Your Dataset**
+
 Place a CSV file at `assets/models/age_gender.csv` with columns:
+
 ```csv
 age,gender,ethnicity,pixels
 25,1,2,129 128 128 ... (2304 space-separated pixel values)
 ```
 
 ### 2. **Train Models**
+
 ```bash
 ./.venv/Scripts/python train_lightweight_model.py
 ```
 
 ### 3. **Export Weights**
+
 ```bash
 ./.venv/Scripts/python export_model_weights.py
 ```
 
 ### 4. **Update Flutter**
+
 ```bash
 flutter pub get
 flutter analyze
@@ -162,20 +177,26 @@ flutter test
 ## What's Next
 
 ### Option 1: Use Current Setup (RECOMMENDED)
+
 ✅ Works now, production-ready
+
 - Real models, high accuracy
 - No ML Kit models needed (pure Dart)
 - Small footprint (8 MB git)
 
 ### Option 2: Real TFLite Model (BETTER ACCURACY)
+
 Requires Python 3.12 + TensorFlow:
+
 1. Install Python 3.12
 2. Run the Jupyter notebook
 3. Export real quantized TFLite model
 4. Update Flutter to load TFLite
 
 ### Option 3: Keep Web Build (ALREADY DONE)
+
 ✅ Web builds succeed
+
 - No FFI imports
 - Fallback inference when camera unavailable
 - Platform-safe implementation
@@ -185,6 +206,7 @@ Requires Python 3.12 + TensorFlow:
 ## Verification
 
 ### Build Status
+
 ```
 ✅ flutter pub get         - Success
 ✅ flutter analyze          - No issues found (2.8s)
@@ -194,6 +216,7 @@ Requires Python 3.12 + TensorFlow:
 ```
 
 ### Model Files
+
 ```
 ✅ model_weights.json       - 0.36 MB (feature importances)
 ✅ age_gender_model.json    - 338 B (metadata)
