@@ -20,10 +20,11 @@ class CameraView extends StatefulWidget {
   State<CameraView> createState() => _CameraViewState();
 }
 
-class _CameraViewState extends State<CameraView> {
+class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cam = context.read<CameraProvider>();
 
@@ -48,8 +49,33 @@ class _CameraViewState extends State<CameraView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _attrs?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Pause/resume face detection based on app state to prevent iOS crashes
+    if (_attrs == null) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        // Stop processing when app goes to background
+        _attrs?.stop();
+        break;
+      case AppLifecycleState.resumed:
+        // Resume processing when app comes to foreground
+        _attrs?.start();
+        break;
+      case AppLifecycleState.hidden:
+        // On newer Flutter versions
+        _attrs?.stop();
+        break;
+    }
   }
 
   @override

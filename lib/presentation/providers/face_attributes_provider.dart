@@ -59,6 +59,7 @@ class FaceAttributesProvider extends ChangeNotifier {
       {}; // track smoothed confidence by hash rect
   final double _emaAlpha = 0.4; // smoothing factor (can expose later)
   Float32List? _rgbBuffer; // reusable buffer for RGB preprocessing
+  StreamSubscription<CameraImage>? _imageStreamSubscription;
 
   Future<void> start() async {
     if (_running) return;
@@ -68,17 +69,26 @@ class FaceAttributesProvider extends ChangeNotifier {
     }
     await _camera.startImageStream();
     _running = true;
-    _camera.imageStream.listen(_onFrame);
+    // Cancel existing subscription if any
+    await _imageStreamSubscription?.cancel();
+    _imageStreamSubscription = _camera.imageStream.listen(_onFrame);
   }
 
   Future<void> stop() async {
     _running = false;
+    await _imageStreamSubscription?.cancel();
+    _imageStreamSubscription = null;
     await _camera.stopImageStream();
+    // Clear buffers to free memory
+    _rgbBuffer = null;
+    _faces.clear();
+    _emaConfidence.clear();
   }
 
   @override
   void dispose() {
     stop();
+    _detector.close();
     _inference.dispose();
     super.dispose();
   }
