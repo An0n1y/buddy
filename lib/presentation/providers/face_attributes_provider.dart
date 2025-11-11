@@ -129,7 +129,7 @@ class FaceAttributesProvider extends ChangeNotifier {
           (bb.height / image.height).clamp(0.0, 1.0),
         );
 
-        // Google ML Kit-based emotion inference (default, no fallbacks to TFLite emotion):
+        // Google ML Kit-based emotion inference with improved thresholds
         final s = ((f.smilingProbability ?? 0.0).clamp(0.0, 1.0)).toDouble();
         final le =
             ((f.leftEyeOpenProbability ?? 1.0).clamp(0.0, 1.0)).toDouble();
@@ -139,34 +139,34 @@ class FaceAttributesProvider extends ChangeNotifier {
         final bothClosed = le < 0.25 && re < 0.25;
         final tilt = (f.headEulerAngleZ ?? 0.0).abs(); // degrees
 
-        // Tunable thresholds
-        const happySmile = 0.70;
-        const surprisedSmile = 0.20;
-        const eyesVeryOpen = 0.85;
+        // Fine-tuned thresholds for better accuracy
+        const happySmile = 0.65; // Lowered slightly for earlier happy detection
+        const surprisedSmile = 0.25; // Raised to reduce false positives
+        const eyesVeryOpen =
+            0.90; // Raised significantly - surprised needs VERY open eyes
         const eyesClosed = 0.25;
-        const angrySmile = 0.25;
-        const angryTilt = 15.0; // degrees
+        const angrySmile = 0.20; // Lowered for earlier angry detection
+        const angryTilt = 12.0; // Lowered to catch angry with less tilt
+        const neutralEyeMin = 0.35; // Neutral eyes should be somewhat open
+        const neutralEyeMax = 0.75; // But not too wide
 
         Emotion inferredEmotion;
         double inferredConfidence;
 
+        // Priority order: Happy > Surprised > Sad > Angry > Neutral
         if (s >= happySmile) {
-          // Happy
+          // Happy: Clear smile
           inferredEmotion = Emotion.happy;
           inferredConfidence = s;
         } else if (s < surprisedSmile &&
-            (le > eyesVeryOpen && re > eyesVeryOpen)) {
-          // Surprised: not smiling, eyes very open
+            (le >= eyesVeryOpen && re >= eyesVeryOpen)) {
+          // Surprised: VERY wide eyes (both > 0.90) + minimal smile
           inferredEmotion = Emotion.surprised;
-          final eyeMin = le < re ? le : re; // avoid generic inference issues
-          double eyeBoostRaw = eyeMin - eyesVeryOpen; // can be negative
-          if (eyeBoostRaw < 0) eyeBoostRaw = 0;
-          if (eyeBoostRaw > 1) eyeBoostRaw = 1;
-          double surprisedScore = (1 - s) * 0.6 + eyeBoostRaw * 0.4;
-          if (surprisedScore < 0) surprisedScore = 0;
-          if (surprisedScore > 1) surprisedScore = 1;
-          inferredConfidence = surprisedScore;
-        } else if (s <= 0.40 && (le < eyesClosed && re < eyesClosed)) {
+          final eyesOpenness = (le + re) / 2.0;
+          // Higher confidence when eyes are REALLY wide
+          inferredConfidence =
+              ((1 - s) * 0.4 + eyesOpenness * 0.6).clamp(0.5, 1.0);
+        } else if (s <= 0.35 && (le < eyesClosed && re < eyesClosed)) {
           // Sad: low smile, both eyes nearly closed
           inferredEmotion = Emotion.sad;
           inferredConfidence =
@@ -174,28 +174,32 @@ class FaceAttributesProvider extends ChangeNotifier {
         } else if (s <= angrySmile &&
             !bothClosed &&
             (tilt > angryTilt ||
-                (eyesOpenAvg >= 0.25 && eyesOpenAvg <= 0.65))) {
-          // Angry: low smile, not both closed; either head tilt or eyes in mid-open range (narrowed)
+                (eyesOpenAvg >= 0.30 && eyesOpenAvg <= 0.65))) {
+          // Angry: low smile, not both closed; either head tilt or eyes narrowed
           inferredEmotion = Emotion.angry;
           final eyesMidness =
               (0.5 - (eyesOpenAvg - 0.5).abs()) * 2; // 0..1 peaking at 0.5
-          double tiltScore = (tilt / 30.0);
-          if (tiltScore < 0) tiltScore = 0;
-          if (tiltScore > 1) tiltScore = 1;
+          double tiltScore = (tilt / 25.0).clamp(0.0, 1.0);
           final maxComponent = math.max(eyesMidness, tiltScore);
-          double angryRaw = (1 - s) * 0.5 + maxComponent * 0.5;
-          if (angryRaw < 0) angryRaw = 0;
-          if (angryRaw > 1) angryRaw = 1;
-          inferredConfidence = angryRaw;
+          inferredConfidence =
+              ((1 - s) * 0.5 + maxComponent * 0.5).clamp(0.0, 1.0);
         } else {
+          // Neutral: Default for normal resting face
+          // Eyes in normal range (not too wide, not closed)
+          // Minimal to moderate smile
           inferredEmotion = Emotion.neutral;
-          double neutralSmile = 1.0 - (s - 0.5).abs() * 2;
+          double neutralSmile = 1.0 - (s - 0.4).abs() * 1.5;
           if (neutralSmile < 0) neutralSmile = 0;
           if (neutralSmile > 1) neutralSmile = 1;
-          double neutralEyes = (1 - (eyesOpenAvg - 0.5).abs() * 2).toDouble();
-          if (neutralEyes < 0) neutralEyes = 0;
-          if (neutralEyes > 1) neutralEyes = 1;
-          inferredConfidence = neutralSmile * 0.6 + neutralEyes * 0.4;
+
+          // Neutral eyes should be in mid-range
+          double neutralEyes = 1.0;
+          if (eyesOpenAvg < neutralEyeMin || eyesOpenAvg > neutralEyeMax) {
+            neutralEyes = 0.5; // Reduce confidence if eyes are extreme
+          }
+
+          inferredConfidence =
+              (neutralSmile * 0.6 + neutralEyes * 0.4).clamp(0.4, 0.85);
         }
         final emotion = EmotionResult(
             emotion: inferredEmotion, confidence: inferredConfidence);
