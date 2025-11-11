@@ -179,8 +179,8 @@ class FaceAttributesProvider extends ChangeNotifier {
           inferredEmotion = Emotion.angry;
           final eyesMidness =
               (0.5 - (eyesOpenAvg - 0.5).abs()) * 2; // 0..1 peaking at 0.5
-          double tiltScore = (tilt / 25.0).clamp(0.0, 1.0);
-          final maxComponent = math.max(eyesMidness, tiltScore);
+          final tiltScore = (tilt / 25.0).clamp(0.0, 1.0);
+          final maxComponent = math.max<double>(eyesMidness, tiltScore);
           inferredConfidence =
               ((1 - s) * 0.5 + maxComponent * 0.5).clamp(0.0, 1.0);
         } else {

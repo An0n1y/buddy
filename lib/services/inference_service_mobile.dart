@@ -169,7 +169,7 @@ class InferenceService {
     if (logits.isEmpty) return [];
 
     // Find max for numerical stability
-    double maxLogit = logits.reduce((a, b) => a > b ? a : b);
+    final maxLogit = logits.reduce((a, b) => a > b ? a : b);
 
     // Compute exp(x - max) for each element
     final expValues = logits.map((x) => exp(x - maxLogit)).toList();
