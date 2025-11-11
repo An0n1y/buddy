@@ -208,8 +208,9 @@ class FaceAttributesProvider extends ChangeNotifier {
         String gender = 'Unknown';
         var ageRange = '25-30';
         String? ethnicity;
-        if (_inference.multiInputShape != null) {
-          final shape = _inference.multiInputShape!; // [1,H,W,C]
+        // Use age model input shape for preprocessing
+        if (_inference.ageInputShape != null) {
+          final shape = _inference.ageInputShape!; // [1,H,W,C]
           final w = shape[2];
           final h = shape[1];
           // Prepare or reuse buffer for model input
