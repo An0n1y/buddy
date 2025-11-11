@@ -28,9 +28,8 @@ jobs:
         run: flutter test
       - name: Build Flutter framework for iOS
         run: |
-          # Build JUST the Flutter framework (no signing validation)
+          # Skip framework build, just precache
           flutter precache --ios
-          flutter build ios-framework --release --no-profile --no-debug --output=build/ios/framework
           
       - name: Build iOS app with xcodebuild (unsigned)
         run: |
