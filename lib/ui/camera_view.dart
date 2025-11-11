@@ -52,7 +52,8 @@ class _CameraViewState extends State<CameraView> {
     final camera = context.watch<CameraProvider>();
     final settings = context.watch<SettingsProvider>();
     final history = context.watch<HistoryProvider>();
-    final attrs = context.watch<FaceAttributesProvider?>();
+    // Use internal _attrs instance for overlays instead of watching provider (which we never added to tree)
+    final faces = _attrs?.faces ?? const <FaceAttributes>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -90,22 +91,22 @@ class _CameraViewState extends State<CameraView> {
                     // Face detection overlay with bounding boxes
                     if (_attrs != null) _FaceBoxesOverlay(provider: _attrs!),
                     // Top-center: Primary emotion with morphing emoji
-                    if (attrs != null && attrs.faces.isNotEmpty)
+                    if (faces.isNotEmpty)
                       Positioned(
                         top: 16,
                         left: 0,
                         right: 0,
                         child: Center(
-                          child: _PrimaryEmotionCard(face: attrs.faces.first),
+                          child: _PrimaryEmotionCard(face: faces.first),
                         ),
                       ),
                     // Top-right: Age/Gender/Ethnicity card (capsule)
-                    if (settings.showAgeGender && attrs != null && attrs.faces.isNotEmpty)
+                    if (settings.showAgeGender && faces.isNotEmpty)
                       Positioned(
                         top: 16,
                         right: 16,
                         child: _AgeGenderEthnicityCard(
-                          face: attrs.faces.first,
+                          face: faces.first,
                           ethnicityEnabled: settings.ethnicityEnabled,
                         ),
                       ),
@@ -120,39 +121,22 @@ class _CameraViewState extends State<CameraView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Camera switch button
+                  // Order: switch | capture (center) | flash
                   IconButton.filled(
                     onPressed: () => camera.toggleCamera(),
                     icon: const Icon(Icons.cameraswitch),
                     tooltip: 'Switch camera',
                   ),
-                  const SizedBox(width: 16),
-                  // Flash button
-                  IconButton.filled(
-                    onPressed: () {
-                      final next = switch (camera.flash) {
-                        FlashMode.off => FlashMode.torch,
-                        FlashMode.torch => FlashMode.off,
-                        _ => FlashMode.off,
-                      };
-                      camera.setFlash(next);
-                    },
-                    icon: Icon(camera.flash == FlashMode.torch
-                        ? Icons.flash_on
-                        : Icons.flash_off),
-                    tooltip: 'Toggle flash',
-                  ),
-                  const SizedBox(width: 24),
-                  // Capture button (center, prominent)
+                  const SizedBox(width: 28),
+                  // Capture button centered
                   FilledButton.icon(
                     onPressed: () async {
                       if (camera.controller == null) return;
                       try {
                         final img = await camera.controller!.takePicture();
                         if (context.mounted) {
-                          final attrs = context.read<FaceAttributesProvider?>();
-                          if (attrs != null && attrs.faces.isNotEmpty) {
-                            final face = attrs.faces.first;
+                          if (faces.isNotEmpty) {
+                            final face = faces.first;
                             // Create AgeGenderData from FaceAttributes
                             final ageGenderData = AgeGenderData(
                               ageRange: face.ageRange,
@@ -186,11 +170,21 @@ class _CameraViewState extends State<CameraView> {
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Capture'),
                   ),
-                  const SizedBox(width: 24),
-                  // Placeholder for balance
-                  SizedBox(
-                    width: 40,
-                    child: Container(),
+                  const SizedBox(width: 28),
+                  // Flash button on right
+                  IconButton.filled(
+                    onPressed: () {
+                      final next = switch (camera.flash) {
+                        FlashMode.off => FlashMode.torch,
+                        FlashMode.torch => FlashMode.off,
+                        _ => FlashMode.off,
+                      };
+                      camera.setFlash(next);
+                    },
+                    icon: Icon(camera.flash == FlashMode.torch
+                        ? Icons.flash_on
+                        : Icons.flash_off),
+                    tooltip: 'Toggle flash',
                   ),
                 ],
               ),
@@ -271,7 +265,7 @@ class _AgeGenderEthnicityCard extends StatelessWidget {
     final ethnicity = ethnicityEnabled && face.ethnicity != null
         ? ' • ${face.ethnicity}'
         : '';
-    
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
