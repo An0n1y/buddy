@@ -30,13 +30,13 @@ jobs:
         run: |
           # Skip framework build, just precache
           flutter precache --ios
-          
+
       - name: Build iOS app with xcodebuild (unsigned)
         run: |
           cd ios
           # Run pod install to ensure dependencies are ready
           pod install
-          
+
           # Build with xcodebuild, bypassing all code signing
           xcodebuild archive \
             -workspace Runner.xcworkspace \
