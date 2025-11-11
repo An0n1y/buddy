@@ -48,5 +48,3 @@ flutter:
     - assets/models/age_gender_model.json
     - assets/models/age_gender_ethnicity.tflite
     - assets/models/gender_googlenet.tflite
-    # 3D emoji avatar assets folder (add your .glb files here)
-    - assets/emoji/
