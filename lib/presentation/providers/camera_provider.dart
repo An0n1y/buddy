@@ -25,7 +25,11 @@ class CameraProvider extends ChangeNotifier {
   }
 
   Future<void> setFlash(FlashMode mode) async {
-    await _service.setFlash(mode);
+    try {
+      await _service.setFlash(mode);
+    } catch (_) {
+      // ignore failures (e.g., torch unsupported on front camera)
+    }
     notifyListeners();
   }
 

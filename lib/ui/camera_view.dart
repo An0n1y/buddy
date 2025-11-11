@@ -2,12 +2,12 @@ import 'package:camera/camera.dart';
 import 'package:emotion_sense/presentation/providers/camera_provider.dart';
 import 'package:emotion_sense/presentation/providers/face_attributes_provider.dart';
 import 'package:emotion_sense/core/constants/emotions.dart';
-import 'dart:math' as math;
 import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
 import 'package:emotion_sense/presentation/widgets/morphing_emoji.dart';
 import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:emotion_sense/presentation/screens/settings_screen.dart';
 import 'package:emotion_sense/data/models/age_gender_data.dart';
+// Photos saving intentionally removed to avoid extra permissions
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:emotion_sense/presentation/providers/settings_provider.dart';
@@ -35,6 +35,9 @@ class _CameraViewState extends State<CameraView> {
       Provider.of<FaceAttributesProvider?>(context, listen: false);
       // Manually keep it alive in state for now
       _attrs = attrs;
+      _attrs!.addListener(() {
+        if (mounted) setState(() {});
+      });
       _attrs!.start();
     });
   }
@@ -119,36 +122,56 @@ class _CameraViewState extends State<CameraView> {
               height: 80,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Order: switch | capture (center) | flash
-                  IconButton.filled(
-                    onPressed: () => camera.toggleCamera(),
-                    icon: const Icon(Icons.cameraswitch),
-                    tooltip: 'Switch camera',
+                  // Left: switch camera
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton.filled(
+                        onPressed: () async {
+                          await camera.toggleCamera();
+                        },
+                        icon: Icon(
+                          camera.isFront
+                              ? Icons.cameraswitch
+                              : Icons.cameraswitch_outlined,
+                        ),
+                        tooltip: 'Switch camera',
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 28),
-                  // Capture button centered
-                  FilledButton.icon(
-                    onPressed: () async {
-                      if (camera.controller == null) return;
-                      try {
-                        final img = await camera.controller!.takePicture();
-                        if (context.mounted) {
-                          if (faces.isNotEmpty) {
-                            final face = faces.first;
-                            // Create AgeGenderData from FaceAttributes
-                            final ageGenderData = AgeGenderData(
-                              ageRange: face.ageRange,
-                              gender: face.gender,
-                              confidence: face.confidence,
-                            );
-                            await history.addCapture(
-                              imagePath: img.path,
-                              emotion: face.emotion,
-                              confidence: face.confidence,
-                              ageGender: ageGenderData,
-                            );
+                  // Center: capture button
+                  Expanded(
+                    child: Center(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          if (camera.controller == null) return;
+                          try {
+                            final img = await camera.controller!.takePicture();
+
+                            if (faces.isNotEmpty) {
+                              final face = faces.first;
+                              final ageGenderData = AgeGenderData(
+                                ageRange: face.ageRange,
+                                gender: face.gender,
+                                confidence: face.confidence,
+                              );
+                              await history.addCapture(
+                                imagePath: img.path,
+                                emotion: face.emotion,
+                                confidence: face.confidence,
+                                ageGender: ageGenderData,
+                              );
+                            } else {
+                              // Save neutral placeholder entry even if no face
+                              await history.addCapture(
+                                imagePath: img.path,
+                                emotion: Emotion.neutral,
+                                confidence: 0.0,
+                                ageGender: null,
+                              );
+                            }
+
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -157,34 +180,42 @@ class _CameraViewState extends State<CameraView> {
                                 ),
                               );
                             }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
                           }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e')),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Capture'),
+                        },
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Capture'),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 28),
-                  // Flash button on right
-                  IconButton.filled(
-                    onPressed: () {
-                      final next = switch (camera.flash) {
-                        FlashMode.off => FlashMode.torch,
-                        FlashMode.torch => FlashMode.off,
-                        _ => FlashMode.off,
-                      };
-                      camera.setFlash(next);
-                    },
-                    icon: Icon(camera.flash == FlashMode.torch
-                        ? Icons.flash_on
-                        : Icons.flash_off),
-                    tooltip: 'Toggle flash',
+                  // Right: flash toggle
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton.filled(
+                        onPressed: () async {
+                          if (!camera.isInitialized) return;
+                          final next = switch (camera.flash) {
+                            FlashMode.off => FlashMode.torch,
+                            FlashMode.torch => FlashMode.off,
+                            _ => FlashMode.off,
+                          };
+                          await camera.setFlash(next);
+                          setState(() {});
+                        },
+                        icon: Icon(
+                          camera.flash == FlashMode.torch
+                              ? Icons.flash_on
+                              : Icons.flash_off,
+                        ),
+                        tooltip: 'Toggle flash',
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -204,11 +235,12 @@ class _PrimaryEmotionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Morphing emoji
             Expanded(
               flex: 1,
               child: MorphingEmoji(
@@ -218,7 +250,6 @@ class _PrimaryEmotionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // Emotion text and confidence
             Expanded(
               flex: 2,
               child: Column(
@@ -329,32 +360,7 @@ class _BoxesPainter extends CustomPainter {
       );
       canvas.drawRect(rect, paint);
 
-      // Morphing emoji: crossfade between neutral and happy based on smile probability (0..1)
-      final smile = (f.rawSmileProb ?? (f.emotion == Emotion.happy ? 1.0 : 0.0))
-          .clamp(0.0, 1.0);
-      final neutralOpacity = (1.0 - smile);
-      final happyOpacity = smile;
-      final emojiFontSize = 16.0 + 10.0 * smile; // grow size with smile
-
-      void paintEmoji(String emoji, double opacity) {
-        final tp = TextPainter(
-          text: TextSpan(
-            text: emoji,
-            style: TextStyle(
-              color: Color.fromARGB((255 * opacity).round(), 255, 255, 255),
-              fontSize: emojiFontSize,
-              shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-          maxLines: 1,
-        )..layout();
-        final offset = Offset(rect.left, math.max(0, rect.top - tp.height - 4));
-        tp.paint(canvas, offset);
-      }
-
-      paintEmoji('😐', neutralOpacity);
-      paintEmoji('😄', happyOpacity);
+      // Emoji rendering handled by top-center card; avoid drawing emoji here to prevent duplication.
 
       // Optional info: age • gender [• ethnicity if enabled]
       final info = ethnicityEnabled && (f.ethnicity != null)
