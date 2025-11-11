@@ -23,20 +23,23 @@ class InferenceService {
   bool get isInitialized => _initialized;
 
   List<int>? get ageInputShape => _ageInterpreter?.getInputTensor(0).shape;
-  List<int>? get genderInputShape => _genderInterpreter?.getInputTensor(0).shape;
+  List<int>? get genderInputShape =>
+      _genderInterpreter?.getInputTensor(0).shape;
 
   Future<void> initialize() async {
     try {
       // Load age detection model
       _ageInterpreter = await Interpreter.fromAsset(ageModelAsset);
       debugPrint('✅ Age model loaded successfully');
-      debugPrint('Age input shape: ${_ageInterpreter?.getInputTensor(0).shape}');
-      
+      debugPrint(
+          'Age input shape: ${_ageInterpreter?.getInputTensor(0).shape}');
+
       // Load gender detection model
       _genderInterpreter = await Interpreter.fromAsset(genderModelAsset);
       debugPrint('✅ Gender model loaded successfully');
-      debugPrint('Gender input shape: ${_genderInterpreter?.getInputTensor(0).shape}');
-      
+      debugPrint(
+          'Gender input shape: ${_genderInterpreter?.getInputTensor(0).shape}');
+
       _initialized = true;
     } catch (e) {
       debugPrint('❌ Failed to load TFLite models: $e');
@@ -56,7 +59,10 @@ class InferenceService {
   /// Input should be normalized RGB values [0.0-1.0] in shape [1, H, W, 3]
   Future<AgeGenderEthnicityData> estimateAttributes(
       Float32List input, List<int> shape) async {
-    if (!_initialized || _ageInterpreter == null || _genderInterpreter == null || input.isEmpty) {
+    if (!_initialized ||
+        _ageInterpreter == null ||
+        _genderInterpreter == null ||
+        input.isEmpty) {
       return _fallback();
     }
 
@@ -68,13 +74,13 @@ class InferenceService {
       final ageOutputTensors = _ageInterpreter!.getOutputTensors();
       final ageOutputSize = ageOutputTensors[0].shape.reduce((a, b) => a * b);
       final ageOutput = Float32List(ageOutputSize);
-      
+
       _ageInterpreter!.run(inputData, ageOutput);
-      
+
       // Parse age predictions (8 classes in this model)
       final ageLogits = ageOutput.toList();
       final ageIdx = _argmax(ageLogits);
-      
+
       // Map model output (0-7) to our age ranges
       String ageRange;
       if (ageIdx == 0) {
@@ -92,20 +98,22 @@ class InferenceService {
       } else {
         ageRange = '60+';
       }
-      
+
       final ageConf = _softmax(ageLogits)[ageIdx];
 
       // === GENDER DETECTION ===
       final genderOutputTensors = _genderInterpreter!.getOutputTensors();
-      final genderOutputSize = genderOutputTensors[0].shape.reduce((a, b) => a * b);
+      final genderOutputSize =
+          genderOutputTensors[0].shape.reduce((a, b) => a * b);
       final genderOutput = Float32List(genderOutputSize);
-      
+
       _genderInterpreter!.run(inputData, genderOutput);
-      
+
       // Parse gender predictions (2 classes: Male, Female)
       final genderLogits = genderOutput.toList();
       final genderIdx = _argmax(genderLogits);
-      final gender = _genderLabels[genderIdx.clamp(0, _genderLabels.length - 1)];
+      final gender =
+          _genderLabels[genderIdx.clamp(0, _genderLabels.length - 1)];
       final genderConf = _softmax(genderLogits)[genderIdx];
 
       // Ethnicity is not available yet (would need a third model)
