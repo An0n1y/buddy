@@ -26,32 +26,41 @@ jobs:
         run: flutter analyze
       - name: Test (unit/widget)
         run: flutter test
-      - name: Build iOS (unsigned with xcodebuild)
+      - name: Build Flutter framework for iOS
         run: |
-          # Build the Flutter framework first
-          flutter build ios --release --no-codesign || true
-
-          # Now build with xcodebuild directly, forcing no code signing
+          # Build JUST the Flutter framework (no signing validation)
+          flutter precache --ios
+          flutter build ios-framework --release --no-profile --no-debug --output=build/ios/framework
+          
+      - name: Build iOS app with xcodebuild (unsigned)
+        run: |
           cd ios
-          xcodebuild -workspace Runner.xcworkspace \
+          # Run pod install to ensure dependencies are ready
+          pod install
+          
+          # Build with xcodebuild, bypassing all code signing
+          xcodebuild archive \
+            -workspace Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
-            -sdk iphoneos \
-            -destination generic/platform=iOS \
+            -archivePath ../build/ios/Runner.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
             DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
             PROVISIONING_PROFILE="" \
-            clean build
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration
       - name: Package unsigned IPA
         run: |
-          APP_PATH="build/ios/iphoneos/Runner.app"
+          # The .app should be in the archive
+          APP_PATH="build/ios/Runner.xcarchive/Products/Applications/Runner.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "Runner.app not found at $APP_PATH"
             echo "Searching for .app files:"
-            find build ios -name "*.app" 2>/dev/null || true
+            find build -name "*.app" 2>/dev/null || true
             exit 1
           fi
           mkdir -p build/ios/Payload
