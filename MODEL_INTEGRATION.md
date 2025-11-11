@@ -256,3 +256,58 @@ A: Web already works! No FFI conflicts. Uses fallback heuristics gracefully.
 **Created:** Nov 10, 2025
 **Repository:** https://github.com/naveed-gung/emotion-detector
 **Branch:** main
+
+---
+
+## Real-Time Emotion Avatar (MorphingEmoji)
+
+This project includes a **real-time animated 2D emoji avatar** that mirrors the detected face emotion live in the camera view.
+
+### How It Works
+
+- **Widget:** `lib/presentation/widgets/morphing_emoji.dart`
+- **Integration:** Used in `lib/ui/camera_view.dart` at bottom-center overlay
+- **Rendering:** Pure Flutter CustomPainter (no dependencies, works everywhere)
+- **Emotions Supported:** `neutral`, `happy`, `sad`, `angry`, `surprised`, `funny`
+
+### Features
+
+The `MorphingEmoji` widget programmatically draws and animates:
+
+- **Eye expressions:** Openness, width, and natural blinking (varies by emotion)
+- **Eyebrow positions:** Y-offset and angle convey mood
+- **Mouth shapes:** Curved smiles/frowns with controllable openness
+- **Face color:** Transitions smoothly between emotion-specific hues
+- **Extras:** Tears (sad), anger vein (angry), sparkles (surprised), cheek blush (funny)
+
+### Animation Details
+
+- **Smooth transitions:** 400ms eased interpolation when emotions change
+- **Autonomous blinking:** Random intervals (2.5–7s) based on emotion intensity
+- **Pre-blink squint:** Happy/funny emotions show a brief squint before closing eyes
+- **Double blinks:** ~8% chance for lifelike feel (skipped for angry to maintain intensity)
+
+### Usage Example
+
+```dart
+// In CameraView overlay (already integrated)
+MorphingEmoji(
+  emotion: faces.first.emotion,
+  size: 180,
+  showFaceCircle: true,
+)
+```
+
+### Customization
+
+Edit `morphing_emoji.dart` to adjust:
+
+- Eye/mouth shapes per emotion
+- Animation duration and curves
+- Blink frequency ranges
+- Face colors
+- Extra decorations (tears, sparkles, etc.)
+
+No external assets or 3D models needed—everything is drawn in code!
+
+---

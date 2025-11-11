@@ -60,23 +60,27 @@ Notes:
 
 ## Features implemented
 
-- Camera preview with basic controls (no ML processing)
-- Morphing Emoji widget with:
-  - emotion-based color/shape
-  - blinking (frequency varies per emotion)
-  - rare double-blink and pre-blink squint (happy/funny)
-- Onboarding (privacy-first), Settings, History (stub)
+- **Real-time emotion avatar**: Camera preview displays a live morphing emoji that mirrors detected facial expressions (happy, sad, angry, surprised, funny, neutral)
+- **Morphing Emoji widget** (`lib/presentation/widgets/morphing_emoji.dart`):
+  - Programmatically drawn face (eyes, eyebrows, mouth) with smooth transitions
+  - Emotion-based colors, shapes, and decorations (tears for sad, sparkles for surprised, etc.)
+  - Autonomous blinking with emotion-dependent frequency
+  - Rare double-blink and pre-blink squint for happy/funny emotions
+  - Pure Flutter CustomPainter—no external assets or 3D models needed
+- **Face detection integration**: Google ML Kit face detection with age/gender/ethnicity attributes
+- Onboarding (privacy-first), Settings, History
 - Provider state management
 
 ## Success criteria
 
-- No AI/ML dependencies: uses a manual/mock stream for emotion events; no model files, no on-device inference.
-- Privacy-first: no network calls, no analytics/telemetry, no third-party SDK tracking.
-- iOS CI produces unsigned IPA: GitHub Actions builds with `--no-codesign` and packages `Runner-unsigned.ipa`.
-- Morphing Emoji animation: smooth morphs per emotion, blinking with emotion-dependent frequency, occasional double-blink and pre-blink squint.
-- Settings persistence: toggles and sliders stored via `SharedPreferences` through `SettingsRepository`.
-- Dark and light theme support: switchable in Settings.
-- Lints pass: project follows `flutter_lints` with extra rules (package imports, debouncer disposal, etc.).
+- **Real-time emotion mirroring**: Live morphing emoji avatar in camera view reflects detected facial expressions with smooth animations
+- Face detection: Google ML Kit detects faces and estimates emotion, age, gender, ethnicity
+- Privacy-first: no network calls, no analytics/telemetry, no third-party SDK tracking
+- iOS CI produces unsigned IPA: GitHub Actions builds with `--no-codesign` and packages `Runner-unsigned.ipa`
+- Morphing Emoji animation: smooth morphs per emotion, blinking with emotion-dependent frequency, occasional double-blink and pre-blink squint
+- Settings persistence: toggles and sliders stored via `SharedPreferences` through `SettingsRepository`
+- Dark and light theme support: switchable in Settings
+- Lints pass: project follows `flutter_lints` with extra rules (package imports, debouncer disposal, etc.)
 
 ## Privacy
 

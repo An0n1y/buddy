@@ -1,6 +1,6 @@
 name: emotion_sense
 description: On-device face emotion, age, and gender recognition (offline, TFLite + ML Kit).
-publish_to: 'none'
+publish_to: "none"
 
 version: 0.1.0+1
 
@@ -43,3 +43,5 @@ flutter:
   assets:
     - assets/models/model_weights.json
     - assets/models/age_gender_model.json
+    # 3D emoji avatar assets folder (add your .glb files here)
+    - assets/emoji/

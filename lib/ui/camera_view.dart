@@ -3,15 +3,14 @@ import 'package:emotion_sense/presentation/providers/camera_provider.dart';
 import 'package:emotion_sense/presentation/providers/face_attributes_provider.dart';
 import 'package:emotion_sense/core/constants/emotions.dart';
 import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
-import 'package:emotion_sense/presentation/widgets/morphing_emoji.dart';
 import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:emotion_sense/presentation/screens/settings_screen.dart';
 import 'package:emotion_sense/data/models/age_gender_data.dart';
 // Photos saving intentionally removed to avoid extra permissions
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:emotion_sense/presentation/providers/settings_provider.dart';
 import 'package:emotion_sense/presentation/providers/history_provider.dart';
+import 'package:emotion_sense/presentation/widgets/morphing_emoji.dart';
 
 /// New entry view: shows camera preview with space reserved at bottom for controls/labels.
 class CameraView extends StatefulWidget {
@@ -25,20 +24,23 @@ class _CameraViewState extends State<CameraView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CameraProvider>().initialize();
-      // Start attributes provider when camera ready
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cam = context.read<CameraProvider>();
-      final settings = context.read<SettingsProvider>();
-      final attrs = FaceAttributesProvider(cam.service, settings: settings);
-      // Attach to tree
-      Provider.of<FaceAttributesProvider?>(context, listen: false);
-      // Manually keep it alive in state for now
+
+      // Initialize camera first
+      await cam.initialize();
+
+      // Now create and start face detection
+      final attrs = FaceAttributesProvider(cam.service);
       _attrs = attrs;
       _attrs!.addListener(() {
         if (mounted) setState(() {});
       });
-      _attrs!.start();
+
+      // Start face detection (this starts the image stream)
+      await _attrs!.start();
+
+      if (mounted) setState(() {});
     });
   }
 
@@ -53,10 +55,16 @@ class _CameraViewState extends State<CameraView> {
   @override
   Widget build(BuildContext context) {
     final camera = context.watch<CameraProvider>();
-    final settings = context.watch<SettingsProvider>();
+    // Settings no longer gate age/gender/ethnicity display here
     final history = context.watch<HistoryProvider>();
     // Use internal _attrs instance for overlays instead of watching provider (which we never added to tree)
     final faces = _attrs?.faces ?? const <FaceAttributes>[];
+
+    // Debug: print face count
+    if (faces.isNotEmpty) {
+      debugPrint(
+          '✅ Detected ${faces.length} face(s) - Emotion: ${faces.first.emotion}');
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -93,26 +101,32 @@ class _CameraViewState extends State<CameraView> {
                     CameraPreviewWidget(controller: camera.controller),
                     // Face detection overlay with bounding boxes
                     if (_attrs != null) _FaceBoxesOverlay(provider: _attrs!),
-                    // Top-center: Primary emotion with morphing emoji
-                    if (faces.isNotEmpty)
-                      Positioned(
-                        top: 16,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: _PrimaryEmotionCard(face: faces.first),
+
+                    // TOP-CENTER: Real-time morphing emoji avatar (always visible, default neutral)
+                    Positioned(
+                      top: 16,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: MorphingEmoji(
+                          emotion: faces.isNotEmpty
+                              ? faces.first.emotion
+                              : Emotion
+                                  .neutral, // Default to neutral when no face
+                          size: 120,
+                          showFaceCircle: true,
                         ),
                       ),
-                    // Top-right: Age/Gender/Ethnicity card (capsule)
-                    if (settings.showAgeGender && faces.isNotEmpty)
-                      Positioned(
-                        top: 16,
-                        right: 16,
-                        child: _AgeGenderEthnicityCard(
-                          face: faces.first,
-                          ethnicityEnabled: settings.ethnicityEnabled,
-                        ),
+                    ),
+
+                    // BOTTOM-RIGHT: Age/Gender/Ethnicity capsule (always visible)
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: _AgeGenderEthnicityCard(
+                        face: faces.isNotEmpty ? faces.first : null,
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -197,24 +211,30 @@ class _CameraViewState extends State<CameraView> {
                   Expanded(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: IconButton.filled(
-                        onPressed: () async {
-                          if (!camera.isInitialized) return;
-                          final next = switch (camera.flash) {
-                            FlashMode.off => FlashMode.torch,
-                            FlashMode.torch => FlashMode.off,
-                            _ => FlashMode.off,
-                          };
-                          await camera.setFlash(next);
-                          setState(() {});
-                        },
-                        icon: Icon(
-                          camera.flash == FlashMode.torch
-                              ? Icons.flash_on
-                              : Icons.flash_off,
-                        ),
-                        tooltip: 'Toggle flash',
-                      ),
+                      child: Builder(builder: (context) {
+                        // CameraValue does not expose flashAvailable directly; assume flash unsupported on front camera
+                        final hasFlash = !(camera.isFront);
+                        return IconButton.filled(
+                          onPressed: (!camera.isInitialized || !hasFlash)
+                              ? null
+                              : () async {
+                                  final next = switch (camera.flash) {
+                                    FlashMode.off => FlashMode.torch,
+                                    FlashMode.torch => FlashMode.off,
+                                    _ => FlashMode.off,
+                                  };
+                                  await camera.setFlash(next);
+                                  if (mounted) setState(() {});
+                                },
+                          icon: Icon(
+                            (camera.flash == FlashMode.torch && hasFlash)
+                                ? Icons.flash_on
+                                : Icons.flash_off,
+                          ),
+                          tooltip:
+                              hasFlash ? 'Toggle flash' : 'Flash not available',
+                        );
+                      }),
                     ),
                   ),
                 ],
@@ -227,97 +247,102 @@ class _CameraViewState extends State<CameraView> {
   }
 }
 
-/// Primary emotion display card
-class _PrimaryEmotionCard extends StatelessWidget {
-  const _PrimaryEmotionCard({required this.face});
-  final FaceAttributes face;
+/// Professional single-row capsule with blackish transparent background
+class _AgeGenderEthnicityCard extends StatelessWidget {
+  const _AgeGenderEthnicityCard({
+    required this.face,
+  });
+  final FaceAttributes? face; // Now nullable
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 1,
-              child: MorphingEmoji(
-                emotion: face.emotion,
-                size: 60,
-                showFaceCircle: true,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    face.emotion.name.toUpperCase(),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: face.confidence.clamp(0.0, 1.0),
-                    minHeight: 6,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${(face.confidence * 100).toInt()}%',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ],
+    final ethnicity = face?.ethnicity ?? '---';
+    final ageRange = face?.ageRange ?? '---';
+    final gender = face?.gender ?? '---';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7), // Blackish transparent
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Age
+          _InfoItem(
+            icon: Icons.calendar_today_rounded,
+            text: ageRange,
+            iconColor: Colors.amber.shade400,
+          ),
+          const SizedBox(width: 16),
+          // Gender
+          _InfoItem(
+            icon: gender.toLowerCase() == 'male'
+                ? Icons.male_rounded
+                : gender.toLowerCase() == 'female'
+                    ? Icons.female_rounded
+                    : Icons.person_outline_rounded,
+            text: gender,
+            iconColor: Colors.blue.shade300,
+          ),
+          const SizedBox(width: 16),
+          // Ethnicity
+          _InfoItem(
+            icon: Icons.public_rounded,
+            text: ethnicity,
+            iconColor: Colors.green.shade300,
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Age/Gender/Ethnicity card displayed as a capsule in top-right
-class _AgeGenderEthnicityCard extends StatelessWidget {
-  const _AgeGenderEthnicityCard({
-    required this.face,
-    required this.ethnicityEnabled,
+/// Individual info item with icon and text
+class _InfoItem extends StatelessWidget {
+  const _InfoItem({
+    required this.icon,
+    required this.text,
+    required this.iconColor,
   });
-  final FaceAttributes face;
-  final bool ethnicityEnabled;
+
+  final IconData icon;
+  final String text;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
-    final ethnicity = ethnicityEnabled && face.ethnicity != null
-        ? ' • ${face.ethnicity}'
-        : '';
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              face.ageRange,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${face.gender}$ethnicity',
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: iconColor,
         ),
-      ),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -332,8 +357,7 @@ class _FaceBoxesOverlay extends StatelessWidget {
       animation: provider,
       builder: (context, _) {
         return CustomPaint(
-          painter: _BoxesPainter(provider.faces,
-              context.read<SettingsProvider>().ethnicityEnabled),
+          painter: _BoxesPainter(provider.faces),
         );
       },
     );
@@ -341,9 +365,8 @@ class _FaceBoxesOverlay extends StatelessWidget {
 }
 
 class _BoxesPainter extends CustomPainter {
-  _BoxesPainter(this.faces, this.ethnicityEnabled);
+  _BoxesPainter(this.faces);
   final List<FaceAttributes> faces;
-  final bool ethnicityEnabled;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -362,10 +385,8 @@ class _BoxesPainter extends CustomPainter {
 
       // Emoji rendering handled by top-center card; avoid drawing emoji here to prevent duplication.
 
-      // Optional info: age • gender [• ethnicity if enabled]
-      final info = ethnicityEnabled && (f.ethnicity != null)
-          ? "${f.ageRange} • ${f.gender} • ${f.ethnicity}"
-          : "${f.ageRange} • ${f.gender}";
+      // Info: age • gender • ethnicity (or Unknown)
+      final info = "${f.ageRange} • ${f.gender} • ${f.ethnicity ?? 'Unknown'}";
       final infoPainter = TextPainter(
         text: TextSpan(
           text: info,

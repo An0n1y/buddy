@@ -11,7 +11,6 @@ import 'package:emotion_sense/data/models/emotion_result.dart';
 import 'package:emotion_sense/utils/image_preprocess.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:emotion_sense/presentation/providers/settings_provider.dart';
 
 class FaceAttributes {
   FaceAttributes({
@@ -39,17 +38,13 @@ class FaceAttributes {
 /// Provider that connects Camera -> ML Kit detection -> TFLite inference.
 class FaceAttributesProvider extends ChangeNotifier {
   FaceAttributesProvider(this._camera,
-      {required SettingsProvider settings,
-      FaceDetectionService? detector,
-      InferenceService? inference})
+      {FaceDetectionService? detector, InferenceService? inference})
       : _detector = detector ?? FaceDetectionService(),
-        _inference = inference ?? InferenceService(),
-        _settings = settings;
+        _inference = inference ?? InferenceService();
 
   final CameraService _camera;
   final FaceDetectionService _detector;
   final InferenceService _inference;
-  final SettingsProvider _settings;
 
   final List<FaceAttributes> _faces = [];
   List<FaceAttributes> get faces => List.unmodifiable(_faces);
@@ -57,7 +52,7 @@ class FaceAttributesProvider extends ChangeNotifier {
   bool _running = false;
   bool _busy = false;
   int _skip = 0;
-  int targetFps = 6; // throttle
+  int targetFps = 5; // throttle (reduced to 5 to minimize buffer warnings)
   int _notifyThrottle = 0; // debounce UI updates
   int _lastFaceCount = 0;
   final Map<int, double> _emaConfidence =
@@ -89,8 +84,14 @@ class FaceAttributesProvider extends ChangeNotifier {
   }
 
   Future<void> _onFrame(CameraImage image) async {
-    if (!_running || _busy) return;
-    // simple decimation from ~30fps -> targetFps
+    if (!_running) return;
+
+    // Drop frame immediately if still processing previous frame
+    if (_busy) {
+      return;
+    }
+
+    // Simple decimation from ~30fps -> targetFps
     final baseSkip = math.max(1, (30 / targetFps).round());
     _skip = (_skip + 1) % baseSkip;
     if (_skip != 0) return;
@@ -217,10 +218,8 @@ class FaceAttributesProvider extends ChangeNotifier {
           final res = await _inference.estimateAttributes(input, shape);
           ageRange = res.ageRange;
           gender = res.gender;
-          // Only include ethnicity if enabled
-          if (_settings.ethnicityEnabled) {
-            ethnicity = res.ethnicity;
-          }
+          // Always include ethnicity when estimated
+          ethnicity = res.ethnicity;
         }
 
         // Compute a simple stable key from quantized rect to smooth confidence
