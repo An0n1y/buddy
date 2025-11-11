@@ -14,7 +14,6 @@ void main() {
 
     test('default values', () async {
       expect(await repo.getShowAgeGender(), true);
-      expect(await repo.getUseLottie(), false);
       expect(await repo.getSoundOn(), true);
       expect(await repo.getHapticOn(), true);
       expect(await repo.getThemeMode(), ThemeMode.system);
@@ -24,7 +23,6 @@ void main() {
 
     test('set & get toggles', () async {
       await repo.setShowAgeGender(false);
-      await repo.setUseLottie(true);
       await repo.setSoundOn(false);
       await repo.setHapticOn(false);
       await repo.setThemeMode(ThemeMode.dark);
@@ -32,7 +30,6 @@ void main() {
       await repo.setFrameRate(24);
 
       expect(await repo.getShowAgeGender(), false);
-      expect(await repo.getUseLottie(), true);
       expect(await repo.getSoundOn(), false);
       expect(await repo.getHapticOn(), false);
       expect(await repo.getThemeMode(), ThemeMode.dark);

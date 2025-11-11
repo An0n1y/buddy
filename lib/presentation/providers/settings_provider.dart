@@ -5,7 +5,6 @@ class SettingsProvider extends ChangeNotifier {
   final _repo = SettingsRepository();
 
   bool _showAgeGender = true;
-  bool _useLottie = false;
   bool _soundOn = true;
   bool _hapticOn = true;
   ThemeMode _themeMode = ThemeMode.system;
@@ -21,7 +20,6 @@ class SettingsProvider extends ChangeNotifier {
   bool _ethnicityEnabled = false; // opt-in gate
 
   bool get showAgeGender => _showAgeGender;
-  bool get useLottie => _useLottie;
   bool get soundOn => _soundOn;
   bool get hapticOn => _hapticOn;
   ThemeMode get themeMode => _themeMode;
@@ -43,7 +41,6 @@ class SettingsProvider extends ChangeNotifier {
   // Test-only constructor: initializes synchronously with provided values, skipping async SharedPreferences.
   SettingsProvider.test({
     bool showAgeGender = true,
-    bool useLottie = false,
     bool soundOn = true,
     bool hapticOn = true,
     ThemeMode themeMode = ThemeMode.system,
@@ -58,7 +55,6 @@ class SettingsProvider extends ChangeNotifier {
     int autoCaptureCooldownSec = 8,
   }) {
     _showAgeGender = showAgeGender;
-    _useLottie = useLottie;
     _soundOn = soundOn;
     _hapticOn = hapticOn;
     _themeMode = themeMode;
@@ -75,7 +71,6 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     _showAgeGender = await _repo.getShowAgeGender();
-    _useLottie = await _repo.getUseLottie();
     _soundOn = await _repo.getSoundOn();
     _hapticOn = await _repo.getHapticOn();
     _themeMode = await _repo.getThemeMode();
@@ -95,12 +90,6 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setShowAgeGender(bool v) async {
     _showAgeGender = v;
     await _repo.setShowAgeGender(v);
-    notifyListeners();
-  }
-
-  Future<void> setUseLottie(bool v) async {
-    _useLottie = v;
-    await _repo.setUseLottie(v);
     notifyListeners();
   }
 

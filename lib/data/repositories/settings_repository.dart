@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsRepository {
   static const _kShowAgeGender = 'show_age_gender';
-  static const _kUseLottie = 'use_lottie';
   static const _kSoundOn = 'sound_on';
   static const _kHapticOn = 'haptic_on';
   static const _kThemeMode = 'theme_mode'; // system, light, dark
@@ -27,11 +26,6 @@ class SettingsRepository {
       (await SharedPreferences.getInstance()).getBool(_kShowAgeGender) ?? true;
   Future<void> setShowAgeGender(bool v) async =>
       (await SharedPreferences.getInstance()).setBool(_kShowAgeGender, v);
-
-  Future<bool> getUseLottie() async =>
-      (await SharedPreferences.getInstance()).getBool(_kUseLottie) ?? false;
-  Future<void> setUseLottie(bool v) async =>
-      (await SharedPreferences.getInstance()).setBool(_kUseLottie, v);
 
   Future<bool> getSoundOn() async =>
       (await SharedPreferences.getInstance()).getBool(_kSoundOn) ?? true;

@@ -24,12 +24,6 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (v) => s.setShowAgeGender(v),
           ),
           SwitchListTile(
-            title: const Text('Use Lottie animations'),
-            subtitle: const Text('Morphing Emoji is default'),
-            value: s.useLottie,
-            onChanged: (v) => s.setUseLottie(v),
-          ),
-          SwitchListTile(
             title: const Text('Sound effects'),
             value: s.soundOn,
             onChanged: (v) => s.setSoundOn(v),
