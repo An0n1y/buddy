@@ -6,8 +6,32 @@ on:
   pull_request:
 
 jobs:
+  ios-preflight:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Flutter version
+        run: flutter --version
+      - name: Install dependencies (Dart/Flutter)
+        run: flutter pub get
+      - name: Validate iOS configs quickly (pods + plist)
+        run: |
+          cd ios
+          # Ensure Generated.xcconfig exists
+          test -f Flutter/Generated.xcconfig || (echo "Generated.xcconfig missing; run flutter pub get first" && exit 1)
+          # Run CocoaPods install and fail if merge conflicts are detected
+          pod install --no-repo-update | tee pod_install.log
+          if grep -q "Can't merge user_target_xcconfig" pod_install.log; then
+            echo "CocoaPods merge conflict detected in EXCLUDED_ARCHS"; exit 1; fi
+          # Lint Info.plist formatting
+          plutil -lint Runner/Info.plist
+
   ios-unsigned:
     runs-on: macos-latest
+    needs: ios-preflight
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

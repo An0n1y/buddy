@@ -26,6 +26,8 @@ dependencies:
   flutter_animate: ^4.5.0
   google_fonts: ^6.0.0
   audioplayers: ^5.2.1
+  photo_manager: ^3.2.1
+  flutter_slidable: ^3.0.1
 
   # Storage & Permissions
   shared_preferences: ^2.2.2

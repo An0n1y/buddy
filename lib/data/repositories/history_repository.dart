@@ -51,6 +51,7 @@ class HistoryEntry {
 
 class HistoryRepository {
   static const _fileName = 'history.json';
+  static const _imagesDirName = 'Pictures';
 
   Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -74,5 +75,44 @@ class HistoryRepository {
     final f = await _file();
     final jsonList = entries.map((e) => e.toJson()).toList();
     await f.writeAsString(jsonEncode(jsonList));
+  }
+
+  /// Copy a captured image from a temporary path to a persistent app-managed
+  /// folder under ApplicationDocumentsDirectory/Pictures and return the new path.
+  Future<String> persistImage(String tempPath) async {
+    try {
+      final src = File(tempPath);
+      if (!await src.exists()) return tempPath;
+
+      final docs = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docs.path}/$_imagesDirName');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      final ts = DateTime.now();
+      final filename = 'IMG_${ts.year.toString().padLeft(4, '0')}'
+          '${ts.month.toString().padLeft(2, '0')}'
+          '${ts.day.toString().padLeft(2, '0')}_'
+          '${ts.hour.toString().padLeft(2, '0')}'
+          '${ts.minute.toString().padLeft(2, '0')}'
+          '${ts.second.toString().padLeft(2, '0')}'
+          '${ts.millisecond.toString().padLeft(3, '0')}.jpg';
+      final destPath = '${dir.path}/$filename';
+      await src.copy(destPath);
+      return destPath;
+    } catch (_) {
+      return tempPath;
+    }
+  }
+
+  /// Delete an image file at the given path. Errors are ignored.
+  Future<void> deleteImageAtPath(String path) async {
+    try {
+      final f = File(path);
+      if (await f.exists()) {
+        await f.delete();
+      }
+    } catch (_) {}
   }
 }

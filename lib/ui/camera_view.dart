@@ -10,6 +10,8 @@ import 'package:emotion_sense/data/models/age_gender_data.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:emotion_sense/presentation/providers/history_provider.dart';
+import 'dart:io';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:emotion_sense/presentation/widgets/morphing_emoji.dart';
 
 /// New entry view: shows camera preview with space reserved at bottom for controls/labels.
@@ -46,6 +48,20 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
   }
 
   FaceAttributesProvider? _attrs;
+
+  Future<void> _saveToPhotos(String path) async {
+    try {
+      final perm = await PhotoManager.requestPermissionExtend();
+      if (!perm.isAuth) return; // user denied
+      final file = File(path);
+      if (!await file.exists()) return;
+      final bytes = await file.readAsBytes();
+      final title = path.split(Platform.pathSeparator).last;
+      await PhotoManager.editor.saveImage(bytes, title: title, filename: title);
+    } catch (_) {
+      // ignore failures; saving to Photos is best-effort
+    }
+  }
 
   @override
   void dispose() {
@@ -196,20 +212,23 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 gender: face.gender,
                                 confidence: face.confidence,
                               );
-                              await history.addCapture(
+                              final savedPath = await history.addCapture(
                                 imagePath: img.path,
                                 emotion: face.emotion,
                                 confidence: face.confidence,
                                 ageGender: ageGenderData,
                               );
+                              // Save to Photos/Gallery using photo_manager
+                              await _saveToPhotos(savedPath);
                             } else {
                               // Save neutral placeholder entry even if no face
-                              await history.addCapture(
+                              final savedPath = await history.addCapture(
                                 imagePath: img.path,
                                 emotion: Emotion.neutral,
                                 confidence: 0.0,
                                 ageGender: null,
                               );
+                              await _saveToPhotos(savedPath);
                             }
 
                             if (context.mounted) {
@@ -230,9 +249,32 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                         },
                         icon: const Icon(Icons.camera_alt),
                         label: const Text('Capture'),
+                        style: ButtonStyle(
+                          textStyle: WidgetStatePropertyAll(
+                            TextStyle(
+                              fontSize: Theme.of(context).platform ==
+                                      TargetPlatform.iOS
+                                  ? 13.0
+                                  : 14.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          padding: const WidgetStatePropertyAll(
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          minimumSize: WidgetStatePropertyAll(
+                            Size(
+                              Theme.of(context).platform == TargetPlatform.iOS
+                                  ? 140
+                                  : 120,
+                              44,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
+
                   // Right: flash toggle
                   Expanded(
                     child: Align(

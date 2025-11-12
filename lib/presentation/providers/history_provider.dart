@@ -21,16 +21,17 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addCapture({
+  Future<String> addCapture({
     required String imagePath,
     required Emotion emotion,
     required double confidence,
     AgeGenderData? ageGender,
   }) async {
-    // Keep file path only if file exists
-    if (!await File(imagePath).exists()) return;
+    // Persist image into an app-managed folder; fall back to original path on error.
+    if (!await File(imagePath).exists()) return imagePath;
+    final persistedPath = await _repo.persistImage(imagePath);
     final entry = HistoryEntry(
-      imagePath: imagePath,
+      imagePath: persistedPath,
       emotion: emotion,
       confidence: confidence,
       timestamp: DateTime.now(),
@@ -38,6 +39,14 @@ class HistoryProvider extends ChangeNotifier {
     );
     _entries.add(entry);
     await _repo.save(_entries);
+    notifyListeners();
+    return persistedPath;
+  }
+
+  Future<void> deleteEntry(HistoryEntry entry) async {
+    _entries.remove(entry);
+    await _repo.save(_entries);
+    await _repo.deleteImageAtPath(entry.imagePath);
     notifyListeners();
   }
 }
