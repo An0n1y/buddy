@@ -42,6 +42,14 @@ post_install do |installer|
         'PERMISSION_CAMERA=1',
         'PERMISSION_MICROPHONE=1',
       ]
+
+      # Force a minimum iOS deployment target for all Pods to silence warnings
+      # and ensure consistency with the project's platform setting above.
+      min_target = '13.0'
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      if current.nil? || current.to_f < min_target.to_f
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_target
+      end
     end
   end
 end
