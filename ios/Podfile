@@ -50,6 +50,11 @@ post_install do |installer|
       if current.nil? || current.to_f < min_target.to_f
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_target
       end
+
+      # Unify simulator architectures across all pods to avoid EXCLUDED_ARCHS merge conflicts.
+      # Many pods set different values; explicitly exclude arm64 for iOS simulator builds.
+      # This matches common CocoaPods guidance and avoids duplicate/conflicting settings.
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
     end
   end
 end
