@@ -20,7 +20,6 @@ jobs:
           cache: true
       - name: Flutter version
         run: flutter --version
-      # Cache Xcode DerivedData to speed subsequent builds dramatically
       - name: Cache Xcode DerivedData
         uses: actions/cache@v4
         with:
@@ -41,16 +40,33 @@ jobs:
             ${{ runner.os }}-pods-
       - name: Install dependencies
         run: flutter pub get
-      # Skip manual pod install & extra linting to keep builds fast. Flutter will manage pods as needed.
       - name: Build iOS app (Flutter, unsigned)
         run: |
-          # Build the iOS app without code signing; this produces Runner.app under build/ios/iphoneos
+          # Build the iOS app without code signing using xcodebuild to avoid Flutter's Development Team check
           flutter config --no-analytics
-          flutter build ios --release --no-codesign
+          cd ios
+          # Ensure pods are installed (cached runs are fast)
+          pod install --no-repo-update
+          # Build the app for generic iOS device without code signing
+          set -o pipefail
+          xcodebuild \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ../build/ios \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=\"\" \
+            DEVELOPMENT_TEAM=\"\" \
+            PROVISIONING_PROFILE_SPECIFIER=\"\" \
+            PROVISIONING_PROFILE=\"\" \
+            | sed -e 's/\r$//'
       - name: Package unsigned IPA
         run: |
-          # The .app should be produced by Flutter in build/ios/iphoneos
-          APP_PATH="build/ios/iphoneos/Runner.app"
+          # The .app is produced by xcodebuild in DerivedData Products
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
           if [ ! -d "$APP_PATH" ]; then
             echo "Runner.app not found at $APP_PATH"
             echo "Searching for .app files:"
