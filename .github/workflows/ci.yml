@@ -47,6 +47,9 @@ jobs:
           cd ios
           # Ensure pods are installed (cached runs are fast)
           pod install --no-repo-update
+          # Workaround: Flutter's xcode_backend.sh expects base64-encoded DART_DEFINES on newer toolchains.
+          # Generate a safe, minimal set matching our current config to avoid "Improperly formatted define flag".
+          DART_DEFINES=$(python3 -c "import base64;defs=['DART_OBFUSCATION=false','TRACK_WIDGET_CREATION=true','TREE_SHAKE_ICONS=false','PACKAGE_CONFIG=.dart_tool/package_config.json'];print(','.join(base64.b64encode(s.encode()).decode() for s in defs))")
           # Build the app for generic iOS device without code signing
           set -o pipefail
           xcodebuild \
@@ -62,6 +65,7 @@ jobs:
             DEVELOPMENT_TEAM=\"\" \
             PROVISIONING_PROFILE_SPECIFIER=\"\" \
             PROVISIONING_PROFILE=\"\" \
+            DART_DEFINES="$DART_DEFINES" \
             | sed -e 's/\r$//'
       - name: Package unsigned IPA
         run: |
