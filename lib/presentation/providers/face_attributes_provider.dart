@@ -63,8 +63,8 @@ class FaceAttributesProvider extends ChangeNotifier {
 
   Future<void> start() async {
     if (_running) return;
-    // Always initialize inference for age/gender (ethnicity is optional)
-    if (!kIsWeb) {
+    // Initialize inference once (avoid reloading models repeatedly)
+    if (!kIsWeb && !_inference.isInitialized) {
       await _inference.initialize();
     }
     await _camera.startImageStream();
@@ -200,6 +200,9 @@ class FaceAttributesProvider extends ChangeNotifier {
           inferredConfidence =
               (neutralSmile * 0.6 + neutralEyes * 0.4).clamp(0.4, 0.85);
         }
+        // Apply light hysteresis to reduce rapid flips between nearby states
+        // Keep previous emotion and require either higher confidence or a couple of stable frames to switch.
+        inferredEmotion = _applyHysteresis(inferredEmotion, inferredConfidence);
         final emotion = EmotionResult(
             emotion: inferredEmotion, confidence: inferredConfidence);
 
@@ -279,4 +282,28 @@ int _rectKey(Rect r) {
   final w = (r.width * 1000).round();
   final h = (r.height * 1000).round();
   return l ^ (t << 8) ^ (w << 16) ^ (h << 24);
+}
+
+// Simple hysteresis filter state
+Emotion? _prevEmotion;
+int _sameEmotionFrames = 0;
+
+Emotion _applyHysteresis(Emotion current, double confidence) {
+  if (_prevEmotion == null) {
+    _prevEmotion = current;
+    _sameEmotionFrames = 1;
+    return current;
+  }
+  if (current == _prevEmotion) {
+    _sameEmotionFrames++;
+    return current;
+  }
+  // If new emotion has low confidence and prior state was recent, keep the previous to avoid flicker
+  if (confidence < 0.60 && _sameEmotionFrames < 2) {
+    return _prevEmotion!;
+  }
+  // Accept new emotion
+  _prevEmotion = current;
+  _sameEmotionFrames = 1;
+  return current;
 }

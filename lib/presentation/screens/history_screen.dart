@@ -39,8 +39,8 @@ class HistoryScreen extends StatelessWidget {
                   key: ValueKey(e.imagePath),
                   // Swipe LEFT to delete (endActionPane)
                   endActionPane: ActionPane(
-                    motion: const DrawerMotion(),
-                    extentRatio: 0.25,
+                    motion: const StretchMotion(),
+                    extentRatio: 0.28,
                     children: [
                       SlidableAction(
                         onPressed: (_) async {
@@ -51,13 +51,21 @@ class HistoryScreen extends StatelessWidget {
                             );
                           }
                         },
-                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.redAccent.shade200,
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                        ),
                         icon: Icons.delete,
                         label: 'Delete',
                       ),
                     ],
                   ),
                   child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
                     child: ListTile(
                       onTap: () {
                         Navigator.push(

@@ -222,8 +222,8 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 confidence: face.confidence,
                                 ageGender: ageGenderData,
                               );
-                              // Save to Photos/Gallery using photo_manager
-                              await _saveToPhotos(savedPath);
+                              // Save to Photos/Gallery using photo_manager (defer to microtask)
+                              Future.microtask(() => _saveToPhotos(savedPath));
                             } else {
                               // Save neutral placeholder entry even if no face
                               final savedPath = await history.addCapture(
@@ -232,7 +232,7 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 confidence: 0.0,
                                 ageGender: null,
                               );
-                              await _saveToPhotos(savedPath);
+                              Future.microtask(() => _saveToPhotos(savedPath));
                             }
 
                             if (context.mounted) {
@@ -244,6 +244,10 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                               );
                             }
                             // Resume detection stream after capture
+                            // Add a small delay to avoid iOS camera race conditions
+                            await Future.delayed(
+                                const Duration(milliseconds: 250));
+                            if (!mounted) return;
                             try {
                               await _attrs?.start();
                             } catch (_) {}
