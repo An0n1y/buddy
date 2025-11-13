@@ -42,7 +42,7 @@ class HistoryScreen extends StatelessWidget {
                     motion: const StretchMotion(),
                     extentRatio: 0.28,
                     children: [
-                      SlidableAction(
+                      CustomSlidableAction(
                         onPressed: (_) async {
                           await context.read<HistoryProvider>().deleteEntry(e);
                           if (context.mounted) {
@@ -51,13 +51,33 @@ class HistoryScreen extends StatelessWidget {
                             );
                           }
                         },
-                        backgroundColor: Colors.redAccent.shade200,
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(12),
-                          bottomRight: Radius.circular(12),
+                        autoClose: true,
+                        child: Container(
+                          // Expand to the full height of the slidable
+                          constraints: const BoxConstraints.expand(),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.shade200,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(12),
+                              bottomRight: Radius.circular(12),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.delete, color: Colors.white),
+                              SizedBox(height: 6),
+                              Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        icon: Icons.delete,
-                        label: 'Delete',
                       ),
                     ],
                   ),

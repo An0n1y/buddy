@@ -207,6 +207,9 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             try {
                               await _attrs?.stop();
                             } catch (_) {}
+                            // Allow the camera to settle after stopping the stream (iOS race-condition fix)
+                            await Future.delayed(
+                                const Duration(milliseconds: 80));
                             final img = await camera.controller!.takePicture();
 
                             if (faces.isNotEmpty) {
@@ -246,7 +249,7 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             // Resume detection stream after capture
                             // Add a small delay to avoid iOS camera race conditions
                             await Future.delayed(
-                                const Duration(milliseconds: 250));
+                                const Duration(milliseconds: 350));
                             if (!mounted) return;
                             try {
                               await _attrs?.start();
