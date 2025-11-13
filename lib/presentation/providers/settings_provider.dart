@@ -17,7 +17,7 @@ class SettingsProvider extends ChangeNotifier {
   int _missingFramesNeutral = 45; // frames before auto reversion to neutral
   double _autoCaptureConfidence = 0.75; // threshold for auto capture trigger
   int _autoCaptureCooldownSec = 8; // cooldown before next auto capture
-  bool _ethnicityEnabled = false; // opt-in gate
+  bool _ethnicityEnabled = true; // enabled by default
 
   bool get showAgeGender => _showAgeGender;
   bool get soundOn => _soundOn;

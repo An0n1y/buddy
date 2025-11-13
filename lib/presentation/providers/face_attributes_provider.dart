@@ -139,16 +139,15 @@ class FaceAttributesProvider extends ChangeNotifier {
         final bothClosed = le < 0.25 && re < 0.25;
         final tilt = (f.headEulerAngleZ ?? 0.0).abs(); // degrees
 
-        // Fine-tuned thresholds for better accuracy
-        const happySmile = 0.65; // Lowered slightly for earlier happy detection
-        const surprisedSmile = 0.25; // Raised to reduce false positives
-        const eyesVeryOpen =
-            0.90; // Raised significantly - surprised needs VERY open eyes
-        const eyesClosed = 0.25;
-        const angrySmile = 0.20; // Lowered for earlier angry detection
-        const angryTilt = 12.0; // Lowered to catch angry with less tilt
-        const neutralEyeMin = 0.35; // Neutral eyes should be somewhat open
-        const neutralEyeMax = 0.75; // But not too wide
+    // Tuned thresholds to reduce "happy vs sad" inversions
+    const happySmile = 0.75; // Raise threshold to avoid false happy
+    const surprisedSmile = 0.25; // Minimal smile when surprised
+    const eyesVeryOpen = 0.92; // Very open eyes for surprise
+    const eyesClosed = 0.22; // Slightly lower for sad
+    const angrySmile = 0.20; // Low smile for angry
+    const angryTilt = 12.0; // Mild head tilt acceptable
+    const neutralEyeMin = 0.35;
+    const neutralEyeMax = 0.75;
 
         Emotion inferredEmotion;
         double inferredConfidence;
@@ -166,7 +165,7 @@ class FaceAttributesProvider extends ChangeNotifier {
           // Higher confidence when eyes are REALLY wide
           inferredConfidence =
               ((1 - s) * 0.4 + eyesOpenness * 0.6).clamp(0.5, 1.0);
-        } else if (s <= 0.35 && (le < eyesClosed && re < eyesClosed)) {
+        } else if (s <= 0.30 && (le < eyesClosed && re < eyesClosed)) {
           // Sad: low smile, both eyes nearly closed
           inferredEmotion = Emotion.sad;
           inferredConfidence =

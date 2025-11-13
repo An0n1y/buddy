@@ -203,6 +203,10 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                         onPressed: () async {
                           if (camera.controller == null) return;
                           try {
+                            // Temporarily stop streaming/processing to avoid camera crashes on capture
+                            try {
+                              await _attrs?.stop();
+                            } catch (_) {}
                             final img = await camera.controller!.takePicture();
 
                             if (faces.isNotEmpty) {
@@ -239,12 +243,20 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 ),
                               );
                             }
+                            // Resume detection stream after capture
+                            try {
+                              await _attrs?.start();
+                            } catch (_) {}
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Error: $e')),
                               );
                             }
+                            // Attempt to resume stream on error as well
+                            try {
+                              await _attrs?.start();
+                            } catch (_) {}
                           }
                         },
                         icon: const Icon(Icons.camera_alt),

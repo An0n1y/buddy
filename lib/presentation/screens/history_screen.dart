@@ -37,7 +37,8 @@ class HistoryScreen extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Slidable(
                   key: ValueKey(e.imagePath),
-                  startActionPane: ActionPane(
+                  // Swipe LEFT to delete (endActionPane)
+                  endActionPane: ActionPane(
                     motion: const DrawerMotion(),
                     extentRatio: 0.25,
                     children: [

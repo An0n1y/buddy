@@ -130,7 +130,7 @@ class SettingsRepository {
 
   Future<bool> getEthnicityEnabled() async =>
       (await SharedPreferences.getInstance()).getBool(_kEthnicityEnabled) ??
-      false;
+            true; // Enabled by default
   Future<void> setEthnicityEnabled(bool v) async =>
       (await SharedPreferences.getInstance()).setBool(_kEthnicityEnabled, v);
 }
