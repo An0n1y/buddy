@@ -139,15 +139,15 @@ class FaceAttributesProvider extends ChangeNotifier {
         final bothClosed = le < 0.25 && re < 0.25;
         final tilt = (f.headEulerAngleZ ?? 0.0).abs(); // degrees
 
-    // Tuned thresholds to reduce "happy vs sad" inversions
-    const happySmile = 0.75; // Raise threshold to avoid false happy
-    const surprisedSmile = 0.25; // Minimal smile when surprised
-    const eyesVeryOpen = 0.92; // Very open eyes for surprise
-    const eyesClosed = 0.22; // Slightly lower for sad
-    const angrySmile = 0.20; // Low smile for angry
-    const angryTilt = 12.0; // Mild head tilt acceptable
-    const neutralEyeMin = 0.35;
-    const neutralEyeMax = 0.75;
+        // Tuned thresholds to reduce "happy vs sad" inversions
+        const happySmile = 0.75; // Raise threshold to avoid false happy
+        const surprisedSmile = 0.25; // Minimal smile when surprised
+        const eyesVeryOpen = 0.92; // Very open eyes for surprise
+        const eyesClosed = 0.22; // Slightly lower for sad
+        const angrySmile = 0.20; // Low smile for angry
+        const angryTilt = 12.0; // Mild head tilt acceptable
+        const neutralEyeMin = 0.35;
+        const neutralEyeMax = 0.75;
 
         Emotion inferredEmotion;
         double inferredConfidence;
