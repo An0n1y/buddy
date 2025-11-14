@@ -56,23 +56,40 @@ class HistoryScreen extends StatelessWidget {
                           // Expand to the full height of the slidable
                           constraints: const BoxConstraints.expand(),
                           decoration: BoxDecoration(
-                            color: Colors.redAccent.shade200,
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red.shade400,
+                                Colors.red.shade600,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(12),
                               bottomRight: Radius.circular(12),
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          child: Column(
+                          child: const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.delete, color: Colors.white),
+                            children: [
+                              Icon(Icons.delete_forever_rounded,
+                                  color: Colors.white, size: 28),
                               SizedBox(height: 6),
                               Text(
                                 'Delete',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],

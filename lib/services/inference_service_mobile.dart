@@ -17,8 +17,8 @@ class InferenceService {
   Interpreter? _ageInterpreter;
   Interpreter? _genderInterpreter;
 
-  // Gender labels
-  static const _genderLabels = ['Male', 'Female'];
+  // Gender labels - INVERTED because model outputs are reversed
+  static const _genderLabels = ['Female', 'Male'];
 
   bool get isInitialized => _initialized;
 
@@ -132,11 +132,11 @@ class InferenceService {
       debugPrint(
           '🎯 TFLite Results: Age=$ageRange($ageConf), Gender=$gender($genderConf), Ethnicity=$ethnicity');
 
-      // Return predictions with lowered thresholds to show results more often
-      // Show age if confidence > 0.15, gender if confidence > 0.35
+      // Return predictions with reasonable confidence thresholds
+      // Show age if confidence > 0.25, gender if confidence > 0.4
       return AgeGenderEthnicityData(
-        ageRange: ageConf > 0.15 ? ageRange : 'Unknown',
-        gender: genderConf > 0.35 ? gender : 'Unknown',
+        ageRange: ageConf > 0.25 ? ageRange : 'Unknown',
+        gender: genderConf > 0.4 ? gender : 'Unknown',
         ethnicity: ethnicity,
         ageConfidence: ageConf,
         genderConfidence: genderConf,

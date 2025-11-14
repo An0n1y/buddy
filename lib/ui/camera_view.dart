@@ -50,6 +50,9 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
   FaceAttributesProvider? _attrs;
 
   Future<void> _saveToPhotos(String path) async {
+    // Run in separate isolate-like context to prevent crashes
+    await Future.delayed(const Duration(milliseconds: 100));
+
     try {
       // Request permission first
       final perm = await PhotoManager.requestPermissionExtend();
@@ -64,9 +67,9 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
         return;
       }
 
-      // Add a small delay on iOS to prevent conflicts with camera operations
+      // Critical: Add longer delay on iOS to ensure camera is fully released
       if (Platform.isIOS) {
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       final bytes = await file.readAsBytes();

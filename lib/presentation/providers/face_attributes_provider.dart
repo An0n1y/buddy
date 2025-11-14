@@ -129,79 +129,35 @@ class FaceAttributesProvider extends ChangeNotifier {
           (bb.height / image.height).clamp(0.0, 1.0),
         );
 
-        // Google ML Kit-based emotion inference with improved thresholds
+        // Simple ML Kit-based emotion inference (inspired by reference app)
+        // Uses smile probability as primary indicator
         final s = ((f.smilingProbability ?? 0.0).clamp(0.0, 1.0)).toDouble();
         final le =
             ((f.leftEyeOpenProbability ?? 1.0).clamp(0.0, 1.0)).toDouble();
         final re =
             ((f.rightEyeOpenProbability ?? 1.0).clamp(0.0, 1.0)).toDouble();
-        final eyesOpenAvg = (le + re) / 2.0;
-        final bothClosed = le < 0.25 && re < 0.25;
-        final tilt = (f.headEulerAngleZ ?? 0.0).abs(); // degrees
-
-        // Tuned thresholds to reduce "happy vs sad" inversions
-        const happySmile = 0.75; // Raise threshold to avoid false happy
-        const surprisedSmile = 0.25; // Minimal smile when surprised
-        const eyesVeryOpen = 0.92; // Very open eyes for surprise
-        const eyesClosed = 0.22; // Slightly lower for sad
-        const angrySmile = 0.20; // Low smile for angry
-        const angryTilt = 12.0; // Mild head tilt acceptable
-        const neutralEyeMin = 0.35;
-        const neutralEyeMax = 0.75;
 
         Emotion inferredEmotion;
         double inferredConfidence;
 
-        // Priority order: Happy > Surprised > Sad > Angry > Neutral
-        if (s >= happySmile) {
-          // Happy: Clear smile
+        // Simple, reliable emotion detection based on smile percentage
+        final smilePercent = (s * 100).round();
+
+        if (smilePercent > 70) {
+          // Happy: Strong smile (>70%)
           inferredEmotion = Emotion.happy;
           inferredConfidence = s;
-        } else if (s < surprisedSmile &&
-            (le >= eyesVeryOpen && re >= eyesVeryOpen)) {
-          // Surprised: VERY wide eyes (both > 0.90) + minimal smile
-          inferredEmotion = Emotion.surprised;
-          final eyesOpenness = (le + re) / 2.0;
-          // Higher confidence when eyes are REALLY wide
-          inferredConfidence =
-              ((1 - s) * 0.4 + eyesOpenness * 0.6).clamp(0.5, 1.0);
-        } else if (s <= 0.30 && (le < eyesClosed && re < eyesClosed)) {
-          // Sad: low smile, both eyes nearly closed
-          inferredEmotion = Emotion.sad;
-          inferredConfidence =
-              (((1 - s) * 0.5) + ((1 - eyesOpenAvg) * 0.5)).clamp(0.0, 1.0);
-        } else if (s <= angrySmile &&
-            !bothClosed &&
-            (tilt > angryTilt ||
-                (eyesOpenAvg >= 0.30 && eyesOpenAvg <= 0.65))) {
-          // Angry: low smile, not both closed; either head tilt or eyes narrowed
-          inferredEmotion = Emotion.angry;
-          final eyesMidness =
-              (0.5 - (eyesOpenAvg - 0.5).abs()) * 2; // 0..1 peaking at 0.5
-          final tiltScore = (tilt / 25.0).clamp(0.0, 1.0);
-          final maxComponent = math.max<double>(eyesMidness, tiltScore);
-          inferredConfidence =
-              ((1 - s) * 0.5 + maxComponent * 0.5).clamp(0.0, 1.0);
-        } else {
-          // Neutral: Default for normal resting face
-          // Eyes in normal range (not too wide, not closed)
-          // Minimal to moderate smile
+        } else if (smilePercent > 40) {
+          // Neutral: Moderate smile (40-70%)
           inferredEmotion = Emotion.neutral;
-          double neutralSmile = 1.0 - (s - 0.4).abs() * 1.5;
-          if (neutralSmile < 0) neutralSmile = 0;
-          if (neutralSmile > 1) neutralSmile = 1;
-
-          // Neutral eyes should be in mid-range
-          double neutralEyes = 1.0;
-          if (eyesOpenAvg < neutralEyeMin || eyesOpenAvg > neutralEyeMax) {
-            neutralEyes = 0.5; // Reduce confidence if eyes are extreme
-          }
-
-          inferredConfidence =
-              (neutralSmile * 0.6 + neutralEyes * 0.4).clamp(0.4, 0.85);
+          inferredConfidence = 0.7; // Good confidence for neutral
+        } else {
+          // Sad: Low smile (<40%)
+          inferredEmotion = Emotion.sad;
+          inferredConfidence = 1.0 - s; // Inverse of smile
         }
+
         // Apply light hysteresis to reduce rapid flips between nearby states
-        // Keep previous emotion and require either higher confidence or a couple of stable frames to switch.
         inferredEmotion = _applyHysteresis(inferredEmotion, inferredConfidence);
         final emotion = EmotionResult(
             emotion: inferredEmotion, confidence: inferredConfidence);
