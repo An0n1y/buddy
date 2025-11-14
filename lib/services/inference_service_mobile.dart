@@ -33,17 +33,24 @@ class InferenceService {
       debugPrint('✅ Age model loaded successfully');
       debugPrint(
           'Age input shape: ${_ageInterpreter?.getInputTensor(0).shape}');
+      debugPrint(
+          'Age output shape: ${_ageInterpreter?.getOutputTensor(0).shape}');
 
       // Load gender detection model
       _genderInterpreter = await Interpreter.fromAsset(genderModelAsset);
       debugPrint('✅ Gender model loaded successfully');
       debugPrint(
           'Gender input shape: ${_genderInterpreter?.getInputTensor(0).shape}');
+      debugPrint(
+          'Gender output shape: ${_genderInterpreter?.getOutputTensor(0).shape}');
 
       _initialized = true;
-    } catch (e) {
+      debugPrint('✅ All TFLite models initialized successfully');
+    } catch (e, stackTrace) {
       debugPrint('❌ Failed to load TFLite models: $e');
+      debugPrint('Stack trace: $stackTrace');
       _initialized = false;
+      // Don't rethrow - allow app to continue with fallback values
     }
   }
 
@@ -63,6 +70,7 @@ class InferenceService {
         _ageInterpreter == null ||
         _genderInterpreter == null ||
         input.isEmpty) {
+      debugPrint('⚠️ Models not initialized or input empty, using fallback');
       return _fallback();
     }
 
@@ -124,17 +132,19 @@ class InferenceService {
       debugPrint(
           '🎯 TFLite Results: Age=$ageRange($ageConf), Gender=$gender($genderConf), Ethnicity=$ethnicity');
 
-      // Only return predictions with reasonable confidence
+      // Return predictions with lowered thresholds to show results more often
+      // Show age if confidence > 0.15, gender if confidence > 0.35
       return AgeGenderEthnicityData(
-        ageRange: ageConf > 0.3 ? ageRange : 'Unknown',
-        gender: genderConf > 0.5 ? gender : 'Unknown',
+        ageRange: ageConf > 0.15 ? ageRange : 'Unknown',
+        gender: genderConf > 0.35 ? gender : 'Unknown',
         ethnicity: ethnicity,
         ageConfidence: ageConf,
         genderConfidence: genderConf,
         ethnicityConfidence: ethnicityConf,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ TFLite inference error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return _fallback();
     }
   }

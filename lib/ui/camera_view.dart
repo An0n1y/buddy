@@ -51,15 +51,34 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
 
   Future<void> _saveToPhotos(String path) async {
     try {
+      // Request permission first
       final perm = await PhotoManager.requestPermissionExtend();
-      if (!perm.isAuth) return; // user denied
+      if (!perm.isAuth) {
+        debugPrint('⚠️ Photo library permission denied');
+        return; // user denied
+      }
+      
       final file = File(path);
-      if (!await file.exists()) return;
+      if (!await file.exists()) {
+        debugPrint('⚠️ Image file not found: $path');
+        return;
+      }
+      
+      // Add a small delay on iOS to prevent conflicts with camera operations
+      if (Platform.isIOS) {
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+      
       final bytes = await file.readAsBytes();
       final title = path.split(Platform.pathSeparator).last;
+      
+      // Save image with proper error handling
       await PhotoManager.editor.saveImage(bytes, title: title, filename: title);
-    } catch (_) {
-      // ignore failures; saving to Photos is best-effort
+      debugPrint('✅ Image saved to Photos: $title');
+    } catch (e, stackTrace) {
+      // Log the error but don't crash the app
+      debugPrint('⚠️ Failed to save to Photos: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -206,7 +225,9 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             // Temporarily stop streaming/processing to avoid camera crashes on capture
                             try {
                               await _attrs?.stop();
-                            } catch (_) {}
+                            } catch (e) {
+                              debugPrint('⚠️ Error stopping attributes: $e');
+                            }
                             // Allow the camera to settle after stopping the stream (iOS race-condition fix)
                             await Future.delayed(
                                 const Duration(milliseconds: 80));
@@ -226,6 +247,7 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 ageGender: ageGenderData,
                               );
                               // Save to Photos/Gallery using photo_manager (defer to microtask)
+                              // Don't await to prevent blocking the UI
                               Future.microtask(() => _saveToPhotos(savedPath));
                             } else {
                               // Save neutral placeholder entry even if no face
@@ -247,14 +269,18 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                               );
                             }
                             // Resume detection stream after capture
-                            // Add a small delay to avoid iOS camera race conditions
+                            // Add a longer delay on iOS to avoid race conditions with photo save
                             await Future.delayed(
-                                const Duration(milliseconds: 350));
+                                Duration(milliseconds: Platform.isIOS ? 500 : 350));
                             if (!mounted) return;
                             try {
                               await _attrs?.start();
-                            } catch (_) {}
-                          } catch (e) {
+                            } catch (e) {
+                              debugPrint('⚠️ Error restarting attributes: $e');
+                            }
+                          } catch (e, stackTrace) {
+                            debugPrint('❌ Capture error: $e');
+                            debugPrint('Stack trace: $stackTrace');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Error: $e')),
@@ -263,7 +289,9 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             // Attempt to resume stream on error as well
                             try {
                               await _attrs?.start();
-                            } catch (_) {}
+                            } catch (e) {
+                              debugPrint('⚠️ Error restarting attributes after error: $e');
+                            }
                           }
                         },
                         icon: const Icon(Icons.camera_alt),

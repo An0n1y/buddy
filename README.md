@@ -94,6 +94,8 @@ Notes:
 - Missing Android/iOS folders: run `flutter create .` once at repo root.
 - Permissions: the app requests camera permission at onboarding.
 - Analyzer lints: run `flutter analyze`. Most are enforced via `analysis_options.yaml`.
+- **Age/Gender showing "---"**: The TFLite models (`age_gender_ethnicity.tflite` and `gender_googlenet.tflite`) need to be properly trained models. The current models may be placeholders. For accurate predictions, download pre-trained models from TensorFlow Hub or train your own.
+- **iOS crash after photo capture**: Fixed with iOS-specific delays and proper error handling in photo save operations. If issues persist, check iOS photo library permissions.
 
 ## License
 
