@@ -57,21 +57,21 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
         debugPrint('⚠️ Photo library permission denied');
         return; // user denied
       }
-      
+
       final file = File(path);
       if (!await file.exists()) {
         debugPrint('⚠️ Image file not found: $path');
         return;
       }
-      
+
       // Add a small delay on iOS to prevent conflicts with camera operations
       if (Platform.isIOS) {
         await Future.delayed(const Duration(milliseconds: 200));
       }
-      
+
       final bytes = await file.readAsBytes();
       final title = path.split(Platform.pathSeparator).last;
-      
+
       // Save image with proper error handling
       await PhotoManager.editor.saveImage(bytes, title: title, filename: title);
       debugPrint('✅ Image saved to Photos: $title');
@@ -270,8 +270,8 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             }
                             // Resume detection stream after capture
                             // Add a longer delay on iOS to avoid race conditions with photo save
-                            await Future.delayed(
-                                Duration(milliseconds: Platform.isIOS ? 500 : 350));
+                            await Future.delayed(Duration(
+                                milliseconds: Platform.isIOS ? 500 : 350));
                             if (!mounted) return;
                             try {
                               await _attrs?.start();
@@ -290,7 +290,8 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                             try {
                               await _attrs?.start();
                             } catch (e) {
-                              debugPrint('⚠️ Error restarting attributes after error: $e');
+                              debugPrint(
+                                  '⚠️ Error restarting attributes after error: $e');
                             }
                           }
                         },
