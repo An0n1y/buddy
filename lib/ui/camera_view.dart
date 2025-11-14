@@ -6,6 +6,7 @@ import 'package:emotion_sense/presentation/widgets/camera_preview_widget.dart';
 import 'package:emotion_sense/presentation/screens/history_screen.dart';
 import 'package:emotion_sense/presentation/screens/settings_screen.dart';
 import 'package:emotion_sense/data/models/age_gender_data.dart';
+import 'package:emotion_sense/utils/image_annotation.dart';
 // Photos saving intentionally removed to avoid extra permissions
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +50,10 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
 
   FaceAttributesProvider? _attrs;
 
-  Future<void> _saveToPhotos(String path) async {
+  /// Saves the captured image to Photos/Gallery with face data annotations
+  /// If faceData is provided, it will draw bounding box, emotion, age, gender, ethnicity on the image
+  Future<void> _saveToPhotos(String path,
+      {FaceAttributes? faceData, required Size imageSize}) async {
     // Run in separate isolate-like context to prevent crashes
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -72,12 +76,21 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
         await Future.delayed(const Duration(milliseconds: 500));
       }
 
-      final bytes = await file.readAsBytes();
+      // Annotate image with face data if available
+      final bytes = faceData != null
+          ? await ImageAnnotation.annotateImage(
+              imagePath: path,
+              faceData: faceData,
+              imageSize: imageSize,
+            )
+          : await file.readAsBytes();
+
       final title = path.split(Platform.pathSeparator).last;
 
-      // Save image with proper error handling
+      // Save annotated image with proper error handling
       await PhotoManager.editor.saveImage(bytes, title: title, filename: title);
-      debugPrint('✅ Image saved to Photos: $title');
+      debugPrint(
+          '✅ Image saved to Photos: $title ${faceData != null ? '(annotated)' : ''}');
     } catch (e, stackTrace) {
       // Log the error but don't crash the app
       debugPrint('⚠️ Failed to save to Photos: $e');
@@ -236,6 +249,14 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 const Duration(milliseconds: 80));
                             final img = await camera.controller!.takePicture();
 
+                            // Get camera image size for annotation
+                            final imageSize = Size(
+                              camera.controller!.value.previewSize?.height ??
+                                  1920,
+                              camera.controller!.value.previewSize?.width ??
+                                  1080,
+                            );
+
                             if (faces.isNotEmpty) {
                               final face = faces.first;
                               final ageGenderData = AgeGenderData(
@@ -249,9 +270,13 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 confidence: face.confidence,
                                 ageGender: ageGenderData,
                               );
-                              // Save to Photos/Gallery using photo_manager (defer to microtask)
+                              // Save to Photos/Gallery with face data annotations
                               // Don't await to prevent blocking the UI
-                              Future.microtask(() => _saveToPhotos(savedPath));
+                              Future.microtask(() => _saveToPhotos(
+                                    savedPath,
+                                    faceData: face,
+                                    imageSize: imageSize,
+                                  ));
                             } else {
                               // Save neutral placeholder entry even if no face
                               final savedPath = await history.addCapture(
@@ -260,7 +285,10 @@ class _CameraViewState extends State<CameraView> with WidgetsBindingObserver {
                                 confidence: 0.0,
                                 ageGender: null,
                               );
-                              Future.microtask(() => _saveToPhotos(savedPath));
+                              Future.microtask(() => _saveToPhotos(
+                                    savedPath,
+                                    imageSize: imageSize,
+                                  ));
                             }
 
                             if (context.mounted) {

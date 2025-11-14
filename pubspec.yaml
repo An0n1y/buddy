@@ -1,5 +1,5 @@
 name: emotion_sense
-description: On-device face emotion, age, and gender recognition (offline, TFLite + ML Kit).
+description: On-device face emotion, age, and gender recognition using TensorFlow Lite (100% offline).
 publish_to: "none"
 
 version: 0.1.0+1
@@ -12,11 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Camera & face detection
+  # Camera
   camera: ^0.11.0
-  google_mlkit_face_detection: ^0.10.0
 
-  # TensorFlow Lite for ML inference (Dart 3 compatible)
+  # TensorFlow Lite for ML inference (100% TFLite, no ML Kit)
   tflite_flutter: ^0.12.1
 
   # State Management
@@ -46,5 +45,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # TFLite models for face detection (front/back camera)
+    - assets/models/face_detection_short_range.tflite
+    - assets/models/face_detection_back.tflite
+    # TFLite model for emotion detection
+    - assets/models/model.tflite
+    # TFLite model for age/gender/ethnicity detection
     - assets/models/age_gender_ethnicity.tflite
-    - assets/models/gender_googlenet.tflite
+    # Emoji assets
+    - assets/emoji/
+    # Sound effects
+    - assets/sounds/

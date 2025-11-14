@@ -5,9 +5,9 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:emotion_sense/core/constants/emotions.dart';
 import 'package:emotion_sense/data/services/camera_service.dart';
-import 'package:emotion_sense/services/face_detection_service.dart';
+import 'package:emotion_sense/services/tflite_face_detection_service.dart';
+import 'package:emotion_sense/services/tflite_emotion_service.dart';
 import 'package:emotion_sense/services/inference_service.dart';
-import 'package:emotion_sense/data/models/emotion_result.dart';
 import 'package:emotion_sense/utils/image_preprocess.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -35,16 +35,22 @@ class FaceAttributes {
   final double? rightEyeOpenProb;
 }
 
-/// Provider that connects Camera -> ML Kit detection -> TFLite inference.
+/// Provider that connects Camera -> TFLite face detection -> TFLite emotion/age/gender inference.
+/// 100% TFLite, no Google ML Kit dependency.
 class FaceAttributesProvider extends ChangeNotifier {
-  FaceAttributesProvider(this._camera,
-      {FaceDetectionService? detector, InferenceService? inference})
-      : _detector = detector ?? FaceDetectionService(),
-        _inference = inference ?? InferenceService();
+  FaceAttributesProvider(
+    this._camera, {
+    TFLiteFaceDetectionService? faceDetector,
+    TFLiteEmotionService? emotionService,
+    InferenceService? attributeService,
+  })  : _faceDetector = faceDetector ?? TFLiteFaceDetectionService(),
+        _emotionService = emotionService ?? TFLiteEmotionService(),
+        _attributeService = attributeService ?? InferenceService();
 
   final CameraService _camera;
-  final FaceDetectionService _detector;
-  final InferenceService _inference;
+  final TFLiteFaceDetectionService _faceDetector;
+  final TFLiteEmotionService _emotionService;
+  final InferenceService _attributeService;
 
   final List<FaceAttributes> _faces = [];
   List<FaceAttributes> get faces => List.unmodifiable(_faces);
@@ -63,9 +69,20 @@ class FaceAttributesProvider extends ChangeNotifier {
 
   Future<void> start() async {
     if (_running) return;
-    // Initialize inference once (avoid reloading models repeatedly)
-    if (!kIsWeb && !_inference.isInitialized) {
-      await _inference.initialize();
+    // Initialize all TFLite services once (avoid reloading models repeatedly)
+    if (!kIsWeb) {
+      if (!_faceDetector.isInitialized) {
+        // Determine if we're using front or back camera
+        final isFrontCamera = _camera.controller?.description.lensDirection ==
+            CameraLensDirection.front;
+        await _faceDetector.initialize(isFrontCamera: isFrontCamera);
+      }
+      if (!_emotionService.isInitialized) {
+        await _emotionService.initialize();
+      }
+      if (!_attributeService.isInitialized) {
+        await _attributeService.initialize();
+      }
     }
     await _camera.startImageStream();
     _running = true;
@@ -88,8 +105,9 @@ class FaceAttributesProvider extends ChangeNotifier {
   @override
   void dispose() {
     stop();
-    _detector.close();
-    _inference.dispose();
+    _faceDetector.close();
+    _emotionService.dispose();
+    _attributeService.dispose();
     super.dispose();
   }
 
@@ -108,18 +126,21 @@ class FaceAttributesProvider extends ChangeNotifier {
 
     _busy = true;
     try {
-      final faces = await _detector.process(image);
+      // Step 1: Detect faces using TFLite face detection
+      final faces = await _faceDetector.process(image);
       _faces.clear();
+
       // Process only the largest face to keep latency predictable
       final iterable = faces.isEmpty
-          ? const <dynamic>[]
-          : <dynamic>[
+          ? const <DetectedFace>[]
+          : <DetectedFace>[
               faces.reduce((a, b) =>
                   (a.boundingBox.width * a.boundingBox.height) >=
                           (b.boundingBox.width * b.boundingBox.height)
                       ? a
                       : b)
             ];
+
       for (final f in iterable) {
         final bb = f.boundingBox;
         final rect = Rect.fromLTWH(
@@ -129,53 +150,17 @@ class FaceAttributesProvider extends ChangeNotifier {
           (bb.height / image.height).clamp(0.0, 1.0),
         );
 
-        // Simple ML Kit-based emotion inference (inspired by reference app)
-        // Uses smile probability as primary indicator
-        final s = ((f.smilingProbability ?? 0.0).clamp(0.0, 1.0)).toDouble();
-        final le =
-            ((f.leftEyeOpenProbability ?? 1.0).clamp(0.0, 1.0)).toDouble();
-        final re =
-            ((f.rightEyeOpenProbability ?? 1.0).clamp(0.0, 1.0)).toDouble();
+        // Step 2: Extract face region and detect emotion using TFLite
+        Emotion inferredEmotion = Emotion.neutral;
+        double inferredConfidence = 0.5;
 
-        Emotion inferredEmotion;
-        double inferredConfidence;
-
-        // Simple, reliable emotion detection based on smile percentage
-        final smilePercent = (s * 100).round();
-
-        if (smilePercent > 70) {
-          // Happy: Strong smile (>70%)
-          inferredEmotion = Emotion.happy;
-          inferredConfidence = s;
-        } else if (smilePercent > 40) {
-          // Neutral: Moderate smile (40-70%)
-          inferredEmotion = Emotion.neutral;
-          inferredConfidence = 0.7; // Good confidence for neutral
-        } else {
-          // Sad: Low smile (<40%)
-          inferredEmotion = Emotion.sad;
-          inferredConfidence = 1.0 - s; // Inverse of smile
-        }
-
-        // Apply light hysteresis to reduce rapid flips between nearby states
-        inferredEmotion = _applyHysteresis(inferredEmotion, inferredConfidence);
-        final emotion = EmotionResult(
-            emotion: inferredEmotion, confidence: inferredConfidence);
-
-        // Multitask (Age/Gender/Ethnicity) preprocessing
-        String gender = 'Unknown';
-        var ageRange = '25-30';
-        String? ethnicity;
-        // Use age model input shape for preprocessing
-        if (_inference.ageInputShape != null) {
-          final shape = _inference.ageInputShape!; // [1,H,W,C]
-          final w = shape[2];
-          final h = shape[1];
-          // Prepare or reuse buffer for model input
-          if (_rgbBuffer == null || _rgbBuffer!.length != (w * h * 3)) {
-            _rgbBuffer = Float32List(w * h * 3);
+        try {
+          // Prepare face image for emotion detection (224x224 required by model.tflite)
+          if (_rgbBuffer == null || _rgbBuffer!.length != (224 * 224 * 3)) {
+            _rgbBuffer = Float32List(224 * 224 * 3);
           }
-          final input = yuvToRgbInput(
+
+          final faceInput = yuvToRgbInput(
             image.planes[0].bytes,
             image.planes.length > 1 ? image.planes[1].bytes : null,
             image.planes.length > 2 ? image.planes[2].bytes : null,
@@ -184,39 +169,81 @@ class FaceAttributesProvider extends ChangeNotifier {
             image.planes.length > 1 ? image.planes[1].bytesPerRow : 0,
             image.planes.length > 1 ? image.planes[1].bytesPerPixel ?? 1 : 1,
             bb,
-            w,
-            h,
+            224,
+            224,
             _rgbBuffer,
           );
-          final res = await _inference.estimateAttributes(input, shape);
-          ageRange = res.ageRange;
-          gender = res.gender;
-          // Always include ethnicity when estimated
-          ethnicity = res.ethnicity;
+
+          final emotionResult =
+              await _emotionService.detectEmotion(faceInput, [1, 224, 224, 3]);
+          inferredEmotion = emotionResult.emotion;
+          inferredConfidence = emotionResult.confidence;
+        } catch (e) {
+          debugPrint('⚠️ Emotion detection error: $e');
+        }
+
+        // Step 3: Detect age/gender/ethnicity using TFLite
+        String gender = 'Unknown';
+        var ageRange = 'Unknown';
+        String? ethnicity = 'Unknown';
+
+        try {
+          if (_attributeService.inputShape != null) {
+            final shape = _attributeService.inputShape!; // [1,H,W,C]
+            final w = shape[2];
+            final h = shape[1];
+
+            // Prepare buffer for attribute model input
+            final attrBuffer = Float32List(w * h * 3);
+
+            final attrInput = yuvToRgbInput(
+              image.planes[0].bytes,
+              image.planes.length > 1 ? image.planes[1].bytes : null,
+              image.planes.length > 2 ? image.planes[2].bytes : null,
+              image.width,
+              image.height,
+              image.planes.length > 1 ? image.planes[1].bytesPerRow : 0,
+              image.planes.length > 1 ? image.planes[1].bytesPerPixel ?? 1 : 1,
+              bb,
+              w,
+              h,
+              attrBuffer,
+            );
+
+            final res =
+                await _attributeService.estimateAttributes(attrInput, shape);
+            ageRange = res.ageRange;
+            gender = res.gender;
+            ethnicity = res.ethnicity;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Attribute detection error: $e');
         }
 
         // Compute a simple stable key from quantized rect to smooth confidence
         final key = _rectKey(rect);
         final prev = _emaConfidence[key];
         final smoothed = prev == null
-            ? emotion.confidence
-            : (prev * (1 - _emaAlpha) + emotion.confidence * _emaAlpha);
+            ? inferredConfidence
+            : (prev * (1 - _emaAlpha) + inferredConfidence * _emaAlpha);
         _emaConfidence[key] = smoothed;
 
         _faces.add(FaceAttributes(
           rect: rect,
-          emotion: emotion.emotion,
+          emotion: inferredEmotion,
           confidence: smoothed,
           ageRange: ageRange,
           gender: gender,
           ethnicity: ethnicity,
-          rawSmileProb: s,
-          leftEyeOpenProb: le,
-          rightEyeOpenProb: re,
+          rawSmileProb: null, // Not available from TFLite face detection
+          leftEyeOpenProb: null,
+          rightEyeOpenProb: null,
         ));
       }
+
       final changedCount = _faces.length != _lastFaceCount;
       _lastFaceCount = _faces.length;
+
       // Debounce: notify every 2 processed frames or when face count changes
       _notifyThrottle = (_notifyThrottle + 1) % 2;
       if (_notifyThrottle == 0 || changedCount) {
@@ -238,28 +265,4 @@ int _rectKey(Rect r) {
   final w = (r.width * 1000).round();
   final h = (r.height * 1000).round();
   return l ^ (t << 8) ^ (w << 16) ^ (h << 24);
-}
-
-// Simple hysteresis filter state
-Emotion? _prevEmotion;
-int _sameEmotionFrames = 0;
-
-Emotion _applyHysteresis(Emotion current, double confidence) {
-  if (_prevEmotion == null) {
-    _prevEmotion = current;
-    _sameEmotionFrames = 1;
-    return current;
-  }
-  if (current == _prevEmotion) {
-    _sameEmotionFrames++;
-    return current;
-  }
-  // If new emotion has low confidence and prior state was recent, keep the previous to avoid flicker
-  if (confidence < 0.60 && _sameEmotionFrames < 2) {
-    return _prevEmotion!;
-  }
-  // Accept new emotion
-  _prevEmotion = current;
-  _sameEmotionFrames = 1;
-  return current;
 }

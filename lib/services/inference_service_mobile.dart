@@ -2,52 +2,43 @@ import 'package:flutter/foundation.dart';
 import 'package:emotion_sense/data/models/multitask_result.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-/// Mobile/desktop implementation using TensorFlow Lite models for age, gender, and ethnicity detection.
-/// Loads separate models: age_gender_ethnicity.tflite (age) and gender_googlenet.tflite (gender)
+/// Mobile/desktop implementation using TensorFlow Lite model for age, gender, and ethnicity detection.
+/// Uses single unified model: age_gender_ethnicity.tflite
 class InferenceService {
   InferenceService({
-    this.ageModelAsset = 'assets/models/age_gender_ethnicity.tflite',
-    this.genderModelAsset = 'assets/models/gender_googlenet.tflite',
+    this.modelAsset = 'assets/models/age_gender_ethnicity.tflite',
   });
 
-  final String ageModelAsset;
-  final String genderModelAsset;
+  final String modelAsset;
 
   bool _initialized = false;
-  Interpreter? _ageInterpreter;
-  Interpreter? _genderInterpreter;
+  Interpreter? _interpreter;
 
   // Gender labels - INVERTED because model outputs are reversed
   static const _genderLabels = ['Female', 'Male'];
 
   bool get isInitialized => _initialized;
-
-  List<int>? get ageInputShape => _ageInterpreter?.getInputTensor(0).shape;
-  List<int>? get genderInputShape =>
-      _genderInterpreter?.getInputTensor(0).shape;
+  List<int>? get inputShape => _interpreter?.getInputTensor(0).shape;
 
   Future<void> initialize() async {
     try {
-      // Load age detection model
-      _ageInterpreter = await Interpreter.fromAsset(ageModelAsset);
-      debugPrint('✅ Age model loaded successfully');
-      debugPrint(
-          'Age input shape: ${_ageInterpreter?.getInputTensor(0).shape}');
-      debugPrint(
-          'Age output shape: ${_ageInterpreter?.getOutputTensor(0).shape}');
+      // Load unified age/gender/ethnicity model
+      _interpreter = await Interpreter.fromAsset(modelAsset);
+      debugPrint('✅ Age/Gender/Ethnicity model loaded successfully');
+      debugPrint('Input shape: ${_interpreter?.getInputTensor(0).shape}');
 
-      // Load gender detection model
-      _genderInterpreter = await Interpreter.fromAsset(genderModelAsset);
-      debugPrint('✅ Gender model loaded successfully');
-      debugPrint(
-          'Gender input shape: ${_genderInterpreter?.getInputTensor(0).shape}');
-      debugPrint(
-          'Gender output shape: ${_genderInterpreter?.getOutputTensor(0).shape}');
+      // This model has multiple outputs (age, gender, ethnicity)
+      final numOutputs = _interpreter!.getOutputTensors().length;
+      debugPrint('Number of outputs: $numOutputs');
+      for (int i = 0; i < numOutputs; i++) {
+        debugPrint(
+            'Output $i shape: ${_interpreter?.getOutputTensor(i).shape}');
+      }
 
       _initialized = true;
-      debugPrint('✅ All TFLite models initialized successfully');
+      debugPrint('✅ TFLite model initialized successfully');
     } catch (e, stackTrace) {
-      debugPrint('❌ Failed to load TFLite models: $e');
+      debugPrint('❌ Failed to load TFLite model: $e');
       debugPrint('Stack trace: $stackTrace');
       _initialized = false;
       // Don't rethrow - allow app to continue with fallback values
@@ -55,37 +46,59 @@ class InferenceService {
   }
 
   Future<void> dispose() async {
-    _ageInterpreter?.close();
-    _ageInterpreter = null;
-    _genderInterpreter?.close();
-    _genderInterpreter = null;
+    _interpreter?.close();
+    _interpreter = null;
     _initialized = false;
   }
 
   /// Run inference on preprocessed face image to estimate age, gender, and ethnicity.
   /// Input should be normalized RGB values [0.0-1.0] in shape [1, H, W, 3]
+  /// The unified model outputs: [age_logits, gender_logits, ethnicity_logits]
   Future<AgeGenderEthnicityData> estimateAttributes(
       Float32List input, List<int> shape) async {
-    if (!_initialized ||
-        _ageInterpreter == null ||
-        _genderInterpreter == null ||
-        input.isEmpty) {
-      debugPrint('⚠️ Models not initialized or input empty, using fallback');
+    if (!_initialized || _interpreter == null || input.isEmpty) {
+      debugPrint('⚠️ Model not initialized or input empty, using fallback');
       return _fallback();
     }
 
     try {
-      // Prepare input tensor for both models
+      // Prepare input tensor
       final inputData = input.buffer.asFloat32List();
 
-      // === AGE DETECTION ===
-      final ageOutputTensors = _ageInterpreter!.getOutputTensors();
-      final ageOutputSize = ageOutputTensors[0].shape.reduce((a, b) => a * b);
+      // Get all output tensors from the unified model
+      final outputTensors = _interpreter!.getOutputTensors();
+
+      // This model has 3 outputs: age, gender, ethnicity
+      if (outputTensors.length < 2) {
+        debugPrint('⚠️ Unexpected number of outputs: ${outputTensors.length}');
+        return _fallback();
+      }
+
+      // Prepare output buffers
+      final ageOutputSize = outputTensors[0].shape.reduce((a, b) => a * b);
       final ageOutput = Float32List(ageOutputSize);
 
-      _ageInterpreter!.run(inputData, ageOutput);
+      final genderOutputSize = outputTensors[1].shape.reduce((a, b) => a * b);
+      final genderOutput = Float32List(genderOutputSize);
 
-      // Parse age predictions (8 classes in this model)
+      // Ethnicity output if available
+      Float32List? ethnicityOutput;
+      if (outputTensors.length >= 3) {
+        final ethnicityOutputSize =
+            outputTensors[2].shape.reduce((a, b) => a * b);
+        ethnicityOutput = Float32List(ethnicityOutputSize);
+      }
+
+      // Run inference with multiple outputs
+      final outputs = {
+        0: ageOutput,
+        1: genderOutput,
+        if (ethnicityOutput != null) 2: ethnicityOutput,
+      };
+
+      _interpreter!.runForMultipleInputs([inputData], outputs);
+
+      // === AGE DETECTION ===
       final ageLogits = ageOutput.toList();
       final ageIdx = _argmax(ageLogits);
 
@@ -110,34 +123,43 @@ class InferenceService {
       final ageConf = _softmax(ageLogits)[ageIdx];
 
       // === GENDER DETECTION ===
-      final genderOutputTensors = _genderInterpreter!.getOutputTensors();
-      final genderOutputSize =
-          genderOutputTensors[0].shape.reduce((a, b) => a * b);
-      final genderOutput = Float32List(genderOutputSize);
-
-      _genderInterpreter!.run(inputData, genderOutput);
-
-      // Parse gender predictions (2 classes: Male, Female)
       final genderLogits = genderOutput.toList();
       final genderIdx = _argmax(genderLogits);
       final gender =
           _genderLabels[genderIdx.clamp(0, _genderLabels.length - 1)];
       final genderConf = _softmax(genderLogits)[genderIdx];
 
-      // Ethnicity is not available yet (would need a third model)
-      const ethnicity = 'Unknown';
-      const ethnicityConf = 0.0;
+      // === ETHNICITY DETECTION ===
+      String ethnicity = 'Unknown';
+      double ethnicityConf = 0.0;
+
+      if (ethnicityOutput != null && ethnicityOutput.isNotEmpty) {
+        final ethnicityLogits = ethnicityOutput.toList();
+        final ethnicityIdx = _argmax(ethnicityLogits);
+        ethnicityConf = _softmax(ethnicityLogits)[ethnicityIdx];
+
+        // Map ethnicity index to labels (adjust based on your model)
+        const ethnicityLabels = [
+          'Asian',
+          'Black',
+          'Caucasian',
+          'Hispanic',
+          'Other'
+        ];
+        ethnicity =
+            ethnicityLabels[ethnicityIdx.clamp(0, ethnicityLabels.length - 1)];
+      }
 
       // Debug output
       debugPrint(
-          '🎯 TFLite Results: Age=$ageRange($ageConf), Gender=$gender($genderConf), Ethnicity=$ethnicity');
+          '🎯 TFLite Results: Age=$ageRange($ageConf), Gender=$gender($genderConf), Ethnicity=$ethnicity($ethnicityConf)');
 
       // Return predictions with reasonable confidence thresholds
-      // Show age if confidence > 0.25, gender if confidence > 0.4
+      // Show age if confidence > 0.25, gender if confidence > 0.4, ethnicity if confidence > 0.35
       return AgeGenderEthnicityData(
         ageRange: ageConf > 0.25 ? ageRange : 'Unknown',
         gender: genderConf > 0.4 ? gender : 'Unknown',
-        ethnicity: ethnicity,
+        ethnicity: ethnicityConf > 0.35 ? ethnicity : 'Unknown',
         ageConfidence: ageConf,
         genderConfidence: genderConf,
         ethnicityConfidence: ethnicityConf,
